@@ -1,4 +1,4 @@
-name: Gambit Linux X64 CI on Wino
+name: Gambit Linux X64 CI on GH Runner
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
     - cron:  '0 5 * * *'
 
 jobs:
+
   gambit_build:
     runs-on: ubuntu-latest
     strategy:
@@ -21,41 +22,82 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+    - name: Install required packages
+      run: |
+        ## Compulsory packages to compile GAMBIT
+        sudo apt-get update && \
+        sudo apt-get -y install --no-install-recommends \
+          build-essential \
+          gfortran \
+          cmake \
+          git \
+          python3-yaml \
+          libboost-all-dev \
+          libgsl-dev \
+          libeigen3-dev \
+          liblapack-dev \
+          pkg-config && \
+          sudo apt-get clean
+
+        ## Optional packages for extended GAMBIT functionality
+        sudo apt-get -y install --no-install-recommends \
+          libhdf5-dev \
+          libopenmpi-dev \
+          libcfitsio-dev \
+          libfftw3-dev \
+          libxml2-dev \
+          libgmp-dev \
+          libmpfr-dev \
+          libmpc-dev \
+          python3-venv \
+          python3-pip \
+          python3-dev \
+          libhdf5-dev && \
+          sudo apt-get clean
+
+        sudo mkdir -p /opt/venv
+
+        # Set up Python virtual environment and install packages
+        sudo python3 -m venv /opt/venv && \
+          /opt/venv/bin/python -m pip install --upgrade pip setuptools wheel && \
+          python3 -m pip install \
+          cython \
+          numpy \
+          scipy \
+          numba \
+          matplotlib \
+          future \
+          pyyaml \
+          dill
+
+
+        export PATH="/opt/venv/bin:${PATH}"
     - name: Set up build environment
       run: |
-        echo "Set up the build environment"
         mkdir -p BUILD
         cd BUILD
     - name: Configure with cmake
       run: |
-        echo "Configure with cmake"
-        export PATH=$PATH:/scratch2/shared/patch
         cd BUILD
-        cmake -DPYTHON_LIBRARY=/usr/lib64/libpython3.9.so -DPYTHON_INCLUDE_DIR=/usr/include/python3.9 -DWITH_MPI=ON -DWITH_HEPMC=ON -Ditch="great" -DEIGEN3_INCLUDE_DIR=/mn/fys-server1/a1/chrichan/Packages/Eigen/eigen3 ..
+
+        cmake -DWITH_MPI=ON -Ditch="great;CosmoBit;NeutrinoBit;ExampleBit_B;mathematica;DarkBit;ColliderBit;FlavBit;PrecisionBit" ..
     - name: Build scanners
       run: |
-        echo "Build scanners"
-        export PATH=$PATH:/scratch2/shared/patch
         cd BUILD
-        make -j28 scanners
+        make -j10 scanners
         cmake ..
     - name: Build Gambit
       run: |
-        echo "Build GAMBIT."
-        export PATH=$PATH:/scratch2/shared/patch
         cd BUILD
-        # Now build Gambit
-        make -j28 gambit
+        make -j10 gambit
     - name: CLI test
       run: |
-        echo "Run the test of gambit help"
         ./gambit -h
     - name: Run spartan.yaml
       run: |
         echo "Testing spartan.yaml (with cout printer)"
         sed -i 's/ hdf5/ cout/g' yaml_files/spartan.yaml
-        ./gambit -rf yaml_files/spartan.yaml 
-
+        ./gambit -rf yaml_files/spartan.yaml
 
   backends_build:
     needs: [gambit_build] # Sets run order
@@ -71,28 +113,72 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+    - name: Install required packages
+      run: |
+        ## Compulsory packages to compile GAMBIT
+        sudo apt-get update && \
+        sudo apt-get -y install --no-install-recommends \
+          build-essential \
+          gfortran \
+          cmake \
+          git \
+          python3-yaml \
+          libboost-all-dev \
+          libgsl-dev \
+          libeigen3-dev \
+          liblapack-dev \
+          pkg-config && \
+          sudo apt-get clean
+
+        ## Optional packages for extended GAMBIT functionality
+        sudo apt-get -y install --no-install-recommends \
+          libhdf5-dev \
+          libopenmpi-dev \
+          libcfitsio-dev \
+          libfftw3-dev \
+          libxml2-dev \
+          libgmp-dev \
+          libmpfr-dev \
+          libmpc-dev \
+          python3-venv \
+          python3-pip \
+          python3-dev \
+          libhdf5-dev && \
+          sudo apt-get clean
+
+        sudo mkdir -p /opt/venv
+
+        # Set up Python virtual environment and install packages
+        sudo python3 -m venv /opt/venv && \
+          /opt/venv/bin/python -m pip install --upgrade pip setuptools wheel && \
+          python3 -m pip install \
+          cython \
+          numpy \
+          scipy \
+          numba \
+          matplotlib \
+          future \
+          pyyaml \
+          dill
+
+        export PATH="/opt/venv/bin:${PATH}"
     - name: Set up build environment
       run: |
-        echo "Set up the build environment"
         mkdir -p BUILD
         cd BUILD
     - name: Configure with cmake
       run: |
-        echo "Configure with cmake"
-        export PATH=$PATH:/scratch2/shared/patch
         cd BUILD
-        cmake -DPYTHON_LIBRARY=/usr/lib64/libpython3.9.so -DPYTHON_INCLUDE_DIR=/usr/include/python3.9 -DWITH_MPI=ON -DWITH_HEPMC=ON -DBUILD_FS_MODELS="CMSSM;MSSM;MDM" -Ditch="great" -DEIGEN3_INCLUDE_DIR=/mn/fys-server1/a1/chrichan/Packages/Eigen/eigen3 ..
+
+        cmake -DWITH_MPI=ON -DWITH_HEPMC=ON -DBUILD_FS_MODELS="CMSSM;MSSM;MDM" -Ditch="great" ..
     - name: Build Backends
       run: |
-        echo "Building all Backends"
-        export PATH=$PATH:/scratch2/shared/patch
         cd BUILD
         # Build backends, except those that are tested via other jobs.
         # This replaces the "make backends" command.
-        ../cmake/scripts/build_backends.sh -f default_backends.txt -j 1 -s "nulike susyhit rivet contur pythia higgsbounds higgssignals ATLAS_FullLikes superiso heplikedata heplike" 
+        ../cmake/scripts/build_backends.sh -f default_backends.txt -j 1 -s "nulike susyhit rivet contur pythia higgsbounds higgssignals ATLAS_FullLikes superiso heplikedata heplike"
 
-
-  test_runs:
+  run_tests:
     needs: [gambit_build, backends_build] # Sets run order
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
@@ -106,28 +192,70 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+    - name: Install required packages
+      run: |
+        ## Compulsory packages to compile GAMBIT
+        sudo apt-get update && \
+        sudo apt-get -y install --no-install-recommends \
+          build-essential \
+          gfortran \
+          cmake \
+          git \
+          python3-yaml \
+          libboost-all-dev \
+          libgsl-dev \
+          libeigen3-dev \
+          liblapack-dev \
+          pkg-config && \
+          sudo apt-get clean
+
+        ## Optional packages for extended GAMBIT functionality
+        sudo apt-get -y install --no-install-recommends \
+          libhdf5-dev \
+          libopenmpi-dev \
+          libcfitsio-dev \
+          libfftw3-dev \
+          libxml2-dev \
+          libgmp-dev \
+          libmpfr-dev \
+          libmpc-dev \
+          python3-venv \
+          python3-pip \
+          python3-dev \
+          libhdf5-dev && \
+          sudo apt-get clean
+
+        sudo mkdir -p /opt/venv
+
+        # Set up Python virtual environment and install packages
+        sudo python3 -m venv /opt/venv && \
+          /opt/venv/bin/python -m pip install --upgrade pip setuptools wheel && \
+          python3 -m pip install \
+          cython \
+          numpy \
+          scipy \
+          numba \
+          matplotlib \
+          future \
+          pyyaml \
+          dill
+
+        export PATH="/opt/venv/bin:${PATH}"
     - name: Set up build environment
       run: |
-        echo "Set up the build environment"
         mkdir -p BUILD
         cd BUILD
     - name: Configure with cmake
       run: |
-        echo "Configure with cmake"
-        export PATH=$PATH:/scratch2/shared/patch
         cd BUILD
-        cmake -DPYTHON_LIBRARY=/usr/lib64/libpython3.9.so -DPYTHON_INCLUDE_DIR=/usr/include/python3.9 -DWITH_MPI=ON -DWITH_HEPMC=ON -DBUILD_FS_MODELS="CMSSM;MSSM;MDM" -Ditch="Cosmo;Neutrino;great" -DEIGEN3_INCLUDE_DIR=/mn/fys-server1/a1/chrichan/Packages/Eigen/eigen3 ..
-    - name: Build required scanners
+        cmake -DWITH_MPI=ON -DWITH_HEPMC=ON -DBUILD_FS_MODELS="CMSSM;MSSM;MDM" -Ditch="great" ..
+    - name: Build scanners
       run: |
-        echo "Build scanners required for test runs"
-        export PATH=$PATH:/scratch2/shared/patch
         cd BUILD
-        make -j28 diver
+        make -j10 diver
         cmake ..
-    - name: Build required backends
+    - name: Build Backends
       run: |
-        echo "Building backends required for test runs"
-        export PATH=$PATH:/scratch2/shared/patch
         cd BUILD
         make pythia
         make higgssignals
@@ -138,28 +266,21 @@ jobs:
         make superiso
         make rivet
         make contur
-        echo "Running cmake again, since this is required for ColliderBit/pythia"
-        cmake ..
     - name: Build Gambit
       run: |
-        echo "Build GAMBIT."
-        export PATH=$PATH:/scratch2/shared/patch
         cd BUILD
-        # Now build Gambit
-        make -j28 gambit
+        make -j10 gambit
     - name: Run ColliderBit_CMSSM.yaml
       run: |
-        echo "Test run with ColliderBit_CMSSM.yaml"
         ./gambit -f yaml_files/ColliderBit_CMSSM.yaml
     - name: Run WC_lite.yaml
       run: |
         echo "Test run with WC_lite.yaml (no printing)"
         sed -i "" 's/ hdf5/ none/g' yaml_files/WC_lite.yaml
         ./gambit -f yaml_files/WC_lite.yaml
-
-
-  standalones_build:
-    needs: [gambit_build, backends_build, test_runs] # Sets run order
+    
+  build_standalones:
+    needs: [gambit_build, backends_build, run_tests] # Sets run order
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     strategy:
@@ -172,20 +293,65 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
+    - name: Install required packages
+      run: |
+        ## Compulsory packages to compile GAMBIT
+        sudo apt-get update && \
+        sudo apt-get -y install --no-install-recommends \
+          build-essential \
+          gfortran \
+          cmake \
+          git \
+          python3-yaml \
+          libboost-all-dev \
+          libgsl-dev \
+          libeigen3-dev \
+          liblapack-dev \
+          pkg-config && \
+          sudo apt-get clean
+
+        ## Optional packages for extended GAMBIT functionality
+        sudo apt-get -y install --no-install-recommends \
+          libhdf5-dev \
+          libopenmpi-dev \
+          libcfitsio-dev \
+          libfftw3-dev \
+          libxml2-dev \
+          libgmp-dev \
+          libmpfr-dev \
+          libmpc-dev \
+          python3-venv \
+          python3-pip \
+          python3-dev \
+          libhdf5-dev && \
+          sudo apt-get clean
+
+        sudo mkdir -p /opt/venv
+
+        # Set up Python virtual environment and install packages
+        sudo python3 -m venv /opt/venv && \
+          /opt/venv/bin/python -m pip install --upgrade pip setuptools wheel && \
+          python3 -m pip install \
+          cython \
+          numpy \
+          scipy \
+          numba \
+          matplotlib \
+          future \
+          pyyaml \
+          dill
+
+        export PATH="/opt/venv/bin:${PATH}"
     - name: Set up build environment
       run: |
-        echo "Set up the build environment"
         mkdir -p BUILD
         cd BUILD
     - name: Configure with cmake
       run: |
-        echo "Configure with cmake"
-        export PATH=$PATH:/scratch2/shared/patch
         cd BUILD
-        cmake -DPYTHON_LIBRARY=/usr/lib64/libpython3.9.so -DPYTHON_INCLUDE_DIR=/usr/include/python3.9 -DWITH_MPI=ON -DWITH_HEPMC=ON -DBUILD_FS_MODELS="CMSSM;MSSM;MDM" -Ditch="great" -DEIGEN3_INCLUDE_DIR=/mn/fys-server1/a1/chrichan/Packages/Eigen/eigen3 ..
-    - name: Build standalones
+        cmake -DWITH_MPI=ON -DWITH_HEPMC=ON -DBUILD_FS_MODELS="CMSSM;MSSM;MDM" -Ditch="great" ..
+    - name: Build Standalones
       run: |
-        echo "Test the building of the standalones"
-        export PATH=$PATH:/scratch2/shared/patch
         cd BUILD
         make standalones
+
