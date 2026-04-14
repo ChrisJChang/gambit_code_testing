@@ -20,6 +20,7 @@
 
 #include "gambit/ColliderBit/ColliderBit_eventloop.hpp"
 #include "gambit/ColliderBit/complete_process_PID_pair_multimaps.hpp"
+#include "gambit/Backends/backend_types/smoking.hpp"
 
 // #define COLLIDERBIT_DEBUG
 #define DEBUG_PREFIX "DEBUG: OMP thread " << omp_get_thread_num() << ": " << __FILE__ << ":" << __LINE__ << ":  "
@@ -1910,6 +1911,27 @@ namespace Gambit
       }
 
     }  // end InitialTotalCrossSection_YAMLSLHA
+
+
+    /// Run the smoking NLO+NLL cross-section calculation using the SLHAea object
+    /// already constructed by ColliderBit (normally passed to Pythia).
+    void PerformInitialCrossSection_smoking(initialxsec_container& result)
+    {
+      using namespace Pipes::PerformInitialCrossSection_smoking;
+
+      SLHAstruct slhaea = *Dep::SpectrumAndDecaysForPythia;
+
+      smoking_variables vars;
+      vars.slhaea = slhaea;
+
+      BEreq::smoking_init(vars);
+      BEreq::smoking_calc(vars);
+      BEreq::smoking_finalise();
+
+      // smoking_calc currently prints results to stdout; no structured
+      // return value is available from the backend yet.
+      result = initialxsec_container();
+    }
 
 
   }
