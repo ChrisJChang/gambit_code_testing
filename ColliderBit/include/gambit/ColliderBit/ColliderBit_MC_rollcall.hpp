@@ -44,6 +44,7 @@
 #pragma once
 
 #include "gambit/Utils/util_types.hpp"
+#include "gambit/Backends/backend_types/smoking.hpp"
 
 #define MODULE ColliderBit
 
@@ -505,6 +506,17 @@
     #define FUNCTION getDummyColliderObservable
       START_FUNCTION(double)
       ALLOW_MODELS(TestModel1D)
+    #undef FUNCTION
+  #undef CAPABILITY
+
+  /// Run the smoking NLO+NLL cross-section calculation with default settings.
+  #define CAPABILITY RunSmoking
+  START_CAPABILITY
+    #define FUNCTION runSmoking
+    START_FUNCTION(double)
+    BACKEND_REQ(smoking_init,     (), int,  (smoking_variables&))
+    BACKEND_REQ(smoking_calc,     (), void, (smoking_variables&))
+    BACKEND_REQ(smoking_finalise, (), int,  ())
     #undef FUNCTION
   #undef CAPABILITY
 
