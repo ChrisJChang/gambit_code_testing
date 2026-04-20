@@ -672,7 +672,7 @@ set(name "smoking")
 set(ver "1.0.0")
 set(lib "libsmoking_gambit")
 set(dl "https://github.com/ahye/smoking/archive/refs/heads/gambit_interface.zip")
-set(md5 "6b7f70d509ee651ade1b765ab4b370cf")
+set(md5 "a7f0eafbeae04b9935dacf0f0dbf5c7f")
 set(dir "${PROJECT_SOURCE_DIR}/Backends/installed/${name}/${ver}")
 
 set(smoking_CXX_FLAGS "${BACKEND_CXX_FLAGS}")

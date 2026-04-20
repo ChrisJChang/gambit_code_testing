@@ -57,7 +57,7 @@
     START_FUNCTION(initialxsec_container)
     DEPENDENCY(SpectrumAndDecaysForPythia, SLHAstruct)
     BACKEND_REQ(smoking_init,     (), int,  (smoking_variables&))
-    BACKEND_REQ(smoking_calc,     (), void, (smoking_variables&))
+    BACKEND_REQ(smoking_calc,     (), std::vector<Result>, (smoking_variables&))
     BACKEND_REQ(smoking_finalise, (), int,  ())
     #undef FUNCTION
 

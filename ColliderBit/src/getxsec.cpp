@@ -1921,18 +1921,70 @@ namespace Gambit
 
       SLHAstruct slhaea = *Dep::SpectrumAndDecaysForPythia;
 
+      // Add MODSEL block if it is missing
+      if(slhaea.find("MODSEL") == slhaea.end())                                             \
+      {                                                                                     \
+        SLHAea::Block block("MODSEL");                                                      \
+        block.push_back("BLOCK MODSEL              # Model selection");                     \
+        SLHAea::Line line;                                                                  \
+        line << 1 << 0 << "# Tell smoking that this is a SUSY model.";                       \
+        block.push_back(line);                                                              \
+        slhaea.push_front(block);                                                           \
+      }
+
       smoking_variables vars;
       vars.slhaea = slhaea;
 
       BEreq::smoking_init(vars);
-      BEreq::smoking_calc(vars);
+      std::vector<Result> res = BEreq::smoking_calc(vars); // TODO: This needs to be renamed in smoking, as Result is far too generic a term
       BEreq::smoking_finalise();
 
-      // smoking_calc currently prints results to stdout; no structured
-      // return value is available from the backend yet.
+      std::cout << "LO xsec from smoking: " << res[0].cross_section.central << std::endl;
+
+      // Forming the output...
+      // Calculating the total cross-section as the sum of the process cross sections
+      std::string collider = runOptions->getValueOrDef<std::string>("LHC_13TeV", "Collider"); // TODO: Support multiple Colliders (just loop through a list)
+      map_str_xsec_container TotalXsecContainer;
+      map_int_process_xsec int_proc_xsec_map;
+      map_str_map_int_process_xsec ProcessXsecContainer;
+      xsec total_xsec;
+      for (size_t i = 0; i < vars.pid1.size(); i++)
+      {
+        // TODO: What to put as the codes here, Would  eneed to be careful to make sure they match Pythia?
+        int code = vars.pid1[i];// input_variables.pid2[i]; // TODO: Just for testing, I am setting the code to the first pid1, this is incorrect!!
+        xsec cross_section = res[i].cross_section;
+        total_xsec = total_xsec + cross_section;
+        double process_xsec = cross_section.central; //combined_process_xsec[code];
+        double process_xsecErr = cross_section.upper - cross_section.central; //combined_process_xsecErr[code];
+        process_xsec_container newprocess;
+        newprocess.set_xsec(process_xsec, process_xsecErr);
+        newprocess.set_process_code(code);
+        int_proc_xsec_map[code] = newprocess;
+      }
+      ProcessXsecContainer[collider] = int_proc_xsec_map;
+      xsec_container xsContainer;
+      xsContainer.set_xsec(total_xsec.central, total_xsec.upper - total_xsec.central); // NOTE: Assuming symmetric uncertainty, but smoking can in theory return assymetric uncertainty
+      TotalXsecContainer[collider] = xsContainer;
+
+
       result = initialxsec_container();
+      result.first = TotalXsecContainer;
+      result.second = ProcessXsecContainer;
     }
 
 
+  /// Copy the Initial CrossSection estimate into the Final as the Total CrossSection
+  /// This is useful when evalutating both using e.g. NLO xsec calculators
+  void useInitialCrossSectionasFinalTotalCrossSection(xsec_container& result)
+  {
+    using namespace Pipes::useInitialCrossSectionasFinalTotalCrossSection;
+    std::string collider = Dep::RunMC->current_collider();
+
+    initialxsec_container initial_xsec = *Dep::PerformInitialCrossSection;
+    result = initial_xsec.first[collider]; 
+  }
+
+  // TODO: Same but for process xsecs
+  
   }
 }

@@ -25,6 +25,8 @@
 
 #include <string>
 #include <vector>
+#include <cmath>
+#include <iostream>
 
 // ---------------------------------------------------------------------------
 // Types from smoking's include/smoking/settings.h
@@ -105,5 +107,134 @@ struct smoking_variables
   DivonneParams    divonne_params;
   CuhreParams      cuhre_params;
 };
+
+//
+// Structures for keeping track of results
+//
+
+
+// Struct for single cross section calculations with numerical errors
+// Errors propagate under addition, subtraction and multiplication by constant
+// The struct has a simple printing << operator
+struct xsec{
+  double central;
+  double upper;
+  double lower;
+  
+  // Status flag, not used to store fatal errors
+  int status;
+  
+  // Constructor
+  xsec(double central=0, double upper=0, double lower=0, int status=0): central(central), upper(upper), lower(lower), status(status) {}
+
+  // Addition of cross sections, does not modify object therefore const
+  xsec operator+(const xsec& a) const {
+    // If an error occurred, return the first error
+    int combined_status = 0;
+    if (status < 0) {combined_status = status;}
+    else if (a.status < 0)  {combined_status = a.status;}
+    else {combined_status = std::max(status, a.status);}
+
+    return xsec(central+a.central, sqrt(upper*upper+a.upper*a.upper), sqrt(lower*lower+a.lower*a.lower), combined_status);
+  }
+
+  // Subtraction of cross sections, does not modify object therefore const
+  xsec operator-(const xsec& a) const {
+    // If an error occurred, return the first error
+    int combined_status = 0;
+    if (status < 0) {combined_status = status;}
+    else if (a.status < 0)  {combined_status = a.status;}
+    else {combined_status = std::max(status, a.status);}
+
+    return xsec(central-a.central, sqrt(upper*upper+a.upper*a.upper), sqrt(lower*lower+a.lower*a.lower), combined_status);
+  }
+
+  // Scalar multiplication, does modify object
+  xsec operator*(const double a) {
+    return xsec(a*central, a*upper, a*lower, status);
+  }
+  
+};
+
+xsec operator*(const double k, const xsec& a);
+std::ostream& operator<<(std::ostream& os, const xsec& a);
+
+
+// Struct for bookkeeping results of a complete calculation
+struct Result{
+  xsec cross_section {0,0,0};
+  xsec upper_sca_err {0,0,0};
+  xsec lower_sca_err {0,0,0};
+  std::vector<xsec> sca_err; // Contains cross-section for other scales: For strategy 3 (mu_F,mu_R)/mu_0 = [(0.5,0.5), (2,2)]
+                             // For strategy 7 (mu_F,mu_R)/mu_0 = [(0.5,0.5), (0.5,1), (1,0.5), (1,2), (2,1), (2,2)]
+  std::vector<xsec> pdf_err;
+  double upper_pdf_err;
+  double lower_pdf_err;
+  double upper_alphas_err;
+  double lower_alphas_err;
+
+  // Used to indicate success/failure. Anything other than zero is a failure.
+  int status;
+
+  // Constructor
+  Result() = default;
+  Result(xsec cross_section, std::vector<xsec> sca_err, std::vector<xsec> pdf_err): cross_section(cross_section), sca_err(sca_err), pdf_err(pdf_err) {}
+  
+  // Addition of results, does not modify object therefore const
+  Result operator+(const Result& a) const {
+    std::vector<xsec> total_pdferr;
+    for(size_t i=0; i < pdf_err.size(); i++){
+      total_pdferr.push_back(pdf_err[i]+a.pdf_err[i]);
+    }
+    std::vector<xsec> total_scaerr;
+    for(size_t i=0; i < sca_err.size(); i++){
+      total_scaerr.push_back(sca_err[i]+a.sca_err[i]);
+    }
+    Result res = Result(cross_section+a.cross_section, total_scaerr, total_pdferr);
+    res.status = std::min(status, a.status);
+    
+    return res;
+  }
+
+  // Subtraction of results, does not modify object therefore const
+  Result operator-(const Result& a) const {
+    std::vector<xsec> total_pdferr;
+    for(size_t i=0; i < pdf_err.size(); i++){
+      total_pdferr.push_back(pdf_err[i]-a.pdf_err[i]);
+    }
+    std::vector<xsec> total_scaerr;
+    for(size_t i=0; i < sca_err.size(); i++){
+      total_scaerr.push_back(sca_err[i]-a.sca_err[i]);
+    }
+    Result res = Result(cross_section-a.cross_section, total_scaerr, total_pdferr);
+    res.status = std::min(status, a.status);
+    return res;
+  }
+
+  // Scalar multiplication, does modify object
+  Result operator*(const double a) {
+    std::vector<xsec> total_pdferr;
+    for(size_t i=0; i < pdf_err.size(); i++){
+      total_pdferr.push_back(a*pdf_err[i]);
+    }
+    std::vector<xsec> total_scaerr;
+    for(size_t i=0; i < pdf_err.size(); i++){
+      total_scaerr.push_back(a*sca_err[i]);
+    }
+    Result res = Result(a*cross_section, total_scaerr, total_pdferr);
+    return res;
+  }
+  
+  // Set values equal to a xsec struct (cross section result)
+  Result& operator=(const xsec& a) {
+    cross_section = a;
+    return *this;
+  }
+
+    
+};
+
+Result operator*(const double k, const Result& a);
+
 
 #endif /* defined __smoking_types_hpp__ */

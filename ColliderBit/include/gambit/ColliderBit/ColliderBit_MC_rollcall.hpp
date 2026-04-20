@@ -155,6 +155,13 @@
     NEEDS_MANAGER(RunMC, MCLoopInfo)
     ALLOW_MODELS(ColliderBit_SLHA_scan_model)
     #undef FUNCTION
+
+    /// Get the Total CrossSection by copying the Initial Cross Section (useful when evaluating with an xsec calculator other than Pythia)
+    #define FUNCTION useInitialCrossSectionasFinalTotalCrossSection
+    START_FUNCTION(xsec_container)
+    NEEDS_MANAGER(RunMC, MCLoopInfo)
+    DEPENDENCY(PerformInitialCrossSection, initialxsec_container)
+    #undef FUNCTION
   #undef CAPABILITY
 
   /// Output info on TotalCrossSection as
@@ -228,6 +235,9 @@
     NEEDS_MANAGER(RunMC, MCLoopInfo)
     DEPENDENCY(ActivePIDPairs, vec_PID_pair)
     #undef FUNCTION
+  
+  /// TODO: Chris Chang: Copy process cross-sections from initial cross-section estimate
+
   #undef CAPABILITY
 
   /// Output PID pair cross-sections as a
@@ -515,7 +525,7 @@
     #define FUNCTION runSmoking
     START_FUNCTION(double)
     BACKEND_REQ(smoking_init,     (), int,  (smoking_variables&))
-    BACKEND_REQ(smoking_calc,     (), void, (smoking_variables&))
+    BACKEND_REQ(smoking_calc,     (), std::vector<Result>, (smoking_variables&))
     BACKEND_REQ(smoking_finalise, (), int,  ())
     #undef FUNCTION
   #undef CAPABILITY

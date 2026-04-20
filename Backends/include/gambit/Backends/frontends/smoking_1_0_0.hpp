@@ -44,7 +44,7 @@ LOAD_LIBRARY
  */
 
 BE_FUNCTION(smoking_init,    int,  (smoking_variables&), "init_SMOKING",            "smoking_init")
-BE_FUNCTION(smoking_calc,    void, (smoking_variables&), "Calculate_cross_section", "smoking_calc")
+BE_FUNCTION(smoking_calc,    std::vector<Result>, (smoking_variables&), "Calculate_cross_section", "smoking_calc")
 BE_FUNCTION(smoking_finalise, int, (),                   "finalise_SMOKING",        "smoking_finalise")
 
 // Initialisation function
