@@ -294,6 +294,9 @@ namespace Gambit
         SLHAea::Line line;                                                                  \
         line << 1 << 0 << "# Tell Pythia that this is a SUSY model.";                       \
         block.push_back(line);                                                              \
+	SLHAea::Line line2;                                                                  \
+        line2 << 6 << 3 << "# There is Flavour violations in squark and slepton sectors";    \
+        block.push_back(line2);                                                              \
         result.push_front(block);                                                           \
       }                                                                                     \
                                                                                             \
