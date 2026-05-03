@@ -346,7 +346,7 @@ if(WITH_HDF5)
     set(itch "${itch}" "hdf5printer" "hdf5reader")
   endif()
 else()
-  message("${BoldCyan} X HDF5 is disabled. Excluding hdf5printer and hdf5reader from GAMBIT configuration. Use -DWITH_MPI=ON to enable HDF5. ${ColourReset}")
+  message("${BoldCyan} X HDF5 is disabled. Excluding hdf5printer and hdf5reader from GAMBIT configuration. Use -DWITH_HDF5=ON to enable HDF5. ${ColourReset}")
   set(itch "${itch}" "hdf5printer" "hdf5reader")
 endif()
 
