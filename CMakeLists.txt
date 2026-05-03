@@ -53,7 +53,7 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release_O3")
   SET(CMAKE_BUILD_TYPE Release CACHE STRING "${CMAKE_BUILD_TYPE_STRING}" FORCE)
   SET(FORCE_O3 TRUE)
 endif()
-message("${Yellow}-- Build type is set to ${CMAKE_BUILD_TYPE} ${ColourReset}")
+message("-- Build type is set to ${CMAKE_BUILD_TYPE}")
 
 # Set certain policies to NEW
 foreach(p
@@ -62,7 +62,7 @@ foreach(p
   CMP0022 # CMake 2.8.12
   CMP0025 # CMake 3.0
   CMP0042 # CMake 3.0
-  CMP0048 # Cmake 3.0
+  CMP0048 # CMake 3.0
   CMP0051 # CMake 3.1
   CMP0054 # CMake 3.1
   CMP0060 # CMake 3.16.2
@@ -96,7 +96,7 @@ if (("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel" AND CMAKE_CXX_COMPILER_VERSION 
     ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS MIN_GCC_VERSION) OR
     ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS MIN_CLANG_VERSION) OR
     ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS MIN_APPLECLANG_VERSION))
-  message(FATAL_ERROR "${BoldRed}\nGAMBIT requires at least g++ ${MIN_GCC_VERSION} or icpc ${MIN_ICC_VERSION}.  Please install a newer compiler.${ColourReset}")
+  message(FATAL_ERROR "${BoldRed}\nGAMBIT requires at least g++ ${MIN_GCC_VERSION}, clang++ ${MIN_CLANG_VERSION}, AppleClang ${MIN_APPLECLANG_VERSION}, or icpc ${MIN_ICC_VERSION}.  Please install a newer compiler.${ColourReset}")
 endif()
 
 # Don't relink all binaries when shared lib changes (programs will be rebuilt anyway if used headers change)
@@ -123,7 +123,7 @@ string(REGEX MATCH ";pybind;|;pybind11;|;Pybind;|;Pybind11;" DITCH_PYBIND ";${it
 # otherwise it seems to get it wrong.  Also, we need to add versions of python
 # greater than 3.3 manually, for compatibility with CMake 2.8.12.
 # If pybind11 is ditched, do not worry about PythonLibs
-set(Python_ADDITIONAL_VERSIONS 3.4 3.5 3.6 3.7 3.8 3.9 3.10 3.11)
+set(Python_ADDITIONAL_VERSIONS 3.4 3.5 3.6 3.7 3.8 3.9 3.10 3.11 3.12 3.13)
 find_package(PythonInterp 3)  # We require Python 3.
 if(PYTHONINTERP_FOUND)
   if(NOT DITCH_PYBIND)
@@ -365,7 +365,7 @@ if(EIGEN3_FOUND)
 else()
   message("${BoldRed}   Eigen v3.1.0 or greater not found.  FlexibleSUSY and GM2Calc interfaces will be excluded.${ColourReset}")
   set(itch "${itch};gm2calc;flexiblesusy")
-  message(FATAL_ERROR "\nFlexibleSUSY is currently included in the GAMBIT distribution, so in fact it cannot be ditched.  Please install Eigen3.\n(Note that this will change in future GAMBIT versions, where FlexibleSUSY will be a 'true' backend.)")
+  message(FATAL_ERROR "\nFlexibleSUSY is currently included in the GAMBIT distribution, so in fact it cannot be ditched.  Please install Eigen3.\nIf Eigen3 is already installed in a non-standard location, you can point CMake to it by passing -DEIGEN3_INCLUDE_DIR=/path/to/eigen on the command line, or by setting the environment variable EIGEN3_ROOT (or EIGEN3_ROOT_DIR).\n(Note that this will change in future GAMBIT versions, where FlexibleSUSY will be a 'true' backend.)")
 endif()
 
 # Check for Gnu Scientific Library (GSL)
