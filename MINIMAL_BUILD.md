@@ -95,10 +95,12 @@ Notes:
   (likely because `CMakeCache.txt` from a previous run is sticky — wipe
   the build dir and rerun).
 - `itch` lists modules to **exclude** from the build.
+
 - `WITH_MPI=False` and `WITH_ROOT=False` keep the build minimal. Set
   `-DWITH_MPI=True` instead if you installed OpenMPI per the optional
   step in section 1; cmake will then pick up `mpic++` automatically and
   compile the `#ifdef WITH_MPI` branches in the printer / scanner code.
+
 - This first cmake call takes ~75 seconds (it clones pybind11, runs many
   feature checks).
 
