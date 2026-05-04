@@ -992,6 +992,8 @@ namespace Gambit
                             // Close resources
                             HDF5::closeDataset(dataset_out);
                             HDF5::closeDataset(dataset2_out);
+                            H5Tclose(type);
+                            H5Tclose(type2);
 
                             // Move offset so that next batch is written to correct place in output file
                             offset += batch_size_tot + pc_offset;
@@ -1152,6 +1154,8 @@ namespace Gambit
                              }
                              // Create new dataset
                              setup_hdf5_points(new_group, type, type2, size_tot, *it);
+                             if(type>=0)  H5Tclose(type);
+                             if(type2>=0) H5Tclose(type2);
                           }
                           // Reopen output datasets for copying
                           hid_t dataset_out  = HDF5::openDataset(new_group, *it);
@@ -1307,6 +1311,7 @@ namespace Gambit
 
                             // Close resources
                             HDF5::closeDataset(dataset_out);
+                            H5Tclose(type);
 
                             // Move offset so that next batch is written to correct place in output file
                             offset += batch_size_tot + pc_offset;
