@@ -1955,16 +1955,6 @@ namespace Gambit
 
             std::ostringstream buffer_nonempty_report;
             bool buffer_nonempty_warn(false);
-            std::size_t final_size;
-            if(myRank==0)
-            {
-                /// Need to know final nominal dataset size to ensure unsynchronised datasets match synchronised ones.
-                buffermaster.lock_and_open_file();
-                final_size = buffermaster.get_next_free_position();
-                buffermaster.close_and_unlock_file();
-                std::cout<<"Final dataset size is "<<final_size<<std::endl;
-                logger()<< LogTags::printers << LogTags::info << "Final dataset size is "<<final_size<<EOM;
-            }
 
             #ifdef WITH_MPI
             // Gather RA print buffer data from all other processes
@@ -1989,23 +1979,39 @@ namespace Gambit
                 // So just stick any buffermanager object as the argument to satisfy the function signature requirements.
                 gather_and_print(buffermaster,RA_buffers,false);
             }
-
-            // Try to flush everything left to disk
-            add_aux_buffer(RAbuffer); // Make sure to include 'gathered' RA data, if there is any.
             #endif
-            for(auto it=aux_buffers.begin(); it!=aux_buffers.end(); ++it)
+
+            // Only rank 0 owns the output file, so only rank 0 should flush
+            // RA buffers to disk and extend the unsynchronised datasets to the
+            // final nominal size. Worker ranks have already shipped their RA
+            // data to rank 0 via gather_and_print above.
+            if(myRank==0)
             {
-                if(not (*it)->is_synchronised())
+                /// Need to know final nominal dataset size to ensure unsynchronised datasets match synchronised ones.
+                buffermaster.lock_and_open_file();
+                std::size_t final_size = buffermaster.get_next_free_position();
+                buffermaster.close_and_unlock_file();
+                std::cout<<"Final dataset size is "<<final_size<<std::endl;
+                logger()<< LogTags::printers << LogTags::info << "Final dataset size is "<<final_size<<EOM;
+
+                #ifdef WITH_MPI
+                // Try to flush everything left to disk
+                add_aux_buffer(RAbuffer); // Make sure to include 'gathered' RA data, if there is any.
+                #endif
+                for(auto it=aux_buffers.begin(); it!=aux_buffers.end(); ++it)
                 {
-                    (*it)->flush();
-                    // Check if everything managed to flush!
-                    if(not (*it)->all_buffers_empty())
+                    if(not (*it)->is_synchronised())
                     {
-                        buffer_nonempty_report<<(*it)->buffer_status();
-                        buffer_nonempty_warn = true;
+                        (*it)->flush();
+                        // Check if everything managed to flush!
+                        if(not (*it)->all_buffers_empty())
+                        {
+                            buffer_nonempty_report<<(*it)->buffer_status();
+                            buffer_nonempty_warn = true;
+                        }
+                        // Make sure final dataset size is correct for the unsynchronised buffers
+                        (*it)->extend_all_datasets_to(final_size);
                     }
-                    // Make sure final dataset size is correct for the unsynchronised buffers
-                    (*it)->extend_all_datasets_to(final_size);
                 }
             }
 
