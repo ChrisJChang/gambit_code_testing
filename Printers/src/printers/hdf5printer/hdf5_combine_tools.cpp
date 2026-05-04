@@ -536,13 +536,9 @@ namespace Gambit
                                size_tot_l = size_tot + size; // Last?
                            //}
 
-                           for (auto it = valids.end()-1; size > 0; --it)
-                           {
-                               if (*it)
-                                   break;
-                               else
-                                   --size;
-                           }
+                           // Trim any trailing invalid points (size <= valids.size() ensured above)
+                           while (size > 0 && !valids[size-1])
+                               --size;
 
                            HDF5::closeSpace(dataspace);
                            HDF5::closeSpace(dataspace2);
@@ -804,13 +800,9 @@ namespace Gambit
                        ranks.push_back(valid_rank);
                        ptids.push_back(valid_ptid);
 
-                       for (auto it = valids.end()-1; size > 0; --it)
-                       {
-                           if (*it)
-                               break;
-                           else
-                               --size;
-                       }
+                       // Trim any trailing invalid points (size <= valids.size() ensured above)
+                       while (size > 0 && !valids[size-1])
+                           --size;
                        aux_sizes.push_back(size);
 
                        HDF5::closeSpace(dataspace);
