@@ -1773,7 +1773,26 @@ namespace Gambit
     // Flush data in buffers to disk
     void HDF5Printer2::flush()
     {
+        // Each rank writes its own buffered points under the cross-rank
+        // Utils::FileLock taken inside HDF5MasterBuffer::flush(); no MPI
+        // gather here. The collective gather happens only in finalise().
+        // Auxilliary printers register their buffermaster into the primary's
+        // aux_buffers (see constructor) and have an empty aux_buffers
+        // themselves, so only the primary needs to iterate.
+        // Sync streams before RA streams: matches finalise()'s ordering,
+        // since RA writes target positions established by sync writes.
         buffermaster.flush();
+        if(not is_auxilliary_printer())
+        {
+            for(auto it=aux_buffers.begin(); it!=aux_buffers.end(); ++it)
+            {
+                if((*it)->is_synchronised()) (*it)->flush();
+            }
+            for(auto it=aux_buffers.begin(); it!=aux_buffers.end(); ++it)
+            {
+                if(not (*it)->is_synchronised()) (*it)->flush();
+            }
+        }
     }
 
     // Make sure printer output is fully on disk and safe
