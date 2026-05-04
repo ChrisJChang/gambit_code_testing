@@ -308,6 +308,11 @@ namespace Gambit
                  errmsg << "Error! Tried to write to dataset (name="<<myname()<<") with type id "<<dtype<<" but expected it to have type id "<<expected_dtype<<". This is a bug, please report it.";
                  printer_error().raise(LOCAL_INFO, errmsg.str());
              }
+             // dtype is no longer needed after the equality check; close it
+             // here to avoid leaking one HDF5 type handle per flush per
+             // dataset (write_RA_buffer below already does this at its
+             // matching H5Dget_type site).
+             H5Tclose(dtype);
 
              std::size_t required_size = target_pos+length;
              // Check that target position is allowed
