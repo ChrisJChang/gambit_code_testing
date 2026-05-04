@@ -465,7 +465,20 @@ namespace Gambit
                   printer_error().raise(LOCAL_INFO, errmsg.str());
                 }
                 HDF5::closeFile(file_id);
-                exit(1);
+                // Group does not exist in the pre-existing file. Refuse to
+                // proceed: we are not in resume mode and 'delete_file_on_restart'
+                // is not set, so adding a new group to a file from an unrelated
+                // previous run risks silently mixing unrelated data. Raise a
+                // printer_error with actionable advice rather than calling
+                // bare exit(1) (which bypassed MPI shutdown and left worker
+                // ranks hanging at the upcoming Barrier with no error
+                // message).
+                std::ostringstream errmsg2;
+                errmsg2 << "Error preparing pre-existing output file '"<<finalfile<<"' for writing via hdf5printer! The file exists, but does not contain the requested output group '"<<group<<"', and the run is not in resume mode (so we will not append to it) and 'delete_file_on_restart' is not set (so we will not overwrite it). Refusing to proceed to avoid silently mixing unrelated data. Please take one of the following actions:"<<std::endl;
+                errmsg2 << "  1. Re-run with the -r flag (restart) and set 'delete_file_on_restart: true' to overwrite the existing file;"<<std::endl;
+                errmsg2 << "  2. Choose a different output filename via the 'output_file' printer option;"<<std::endl;
+                errmsg2 << "  3. Manually move or delete the existing file '"<<finalfile<<"'."<<std::endl;
+                printer_error().raise(LOCAL_INFO, errmsg2.str());
               }
 
             }
