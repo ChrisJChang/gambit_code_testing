@@ -332,17 +332,26 @@ namespace Gambit
         std::string group;     // HDF5 group location to store datasets
         std::string metadata_group; // HDF5 group location to store metadata
 
-        // Handles for HDF5 files and groups containing the datasets
-        hid_t file_id;
-        hid_t group_id;
-        hid_t RA_group_id;
-        hid_t metadata_id;
+        // Handles for HDF5 files and groups containing the datasets.
+        // Default-initialised to -1 (the convention this class already uses
+        // as the "unset HDF5 handle" sentinel; see e.g. the get_location() /
+        // get_RA_location() / get_metadata_location() checks). Only the
+        // primary printer's constructor assigns the file/group handles
+        // (file_id, group_id, RA_group_id, metadata_id); aux instances
+        // inherit the *_location_id values from the primary. The default
+        // initialisers ensure that any code path that mistakenly reads one
+        // of these on an aux instance gets a deterministic invalid handle
+        // rather than indeterminate memory.
+        hid_t file_id = -1;
+        hid_t group_id = -1;
+        hid_t RA_group_id = -1;
+        hid_t metadata_id = -1;
 
         // Handle to a location in a HDF5 to which the datasets will be written
         // i.e. a file or a group.
-        hid_t location_id;
-        hid_t RA_location_id;
-        hid_t metadata_location_id;
+        hid_t location_id = -1;
+        hid_t RA_location_id = -1;
+        hid_t metadata_location_id = -1;
 
         /// Pointer to the primary printer object
         // (if this is an auxilliary printer, else it is "this" //NULL)
