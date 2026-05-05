@@ -552,13 +552,14 @@ namespace Gambit
 
         // Force increment the buffer to "catch it up" to the current sync
         // position, in case it has been created "late".
-        // We subtract one because another increment will happen after
-        // the print statement (that triggered the creation of the new
-        // buffer) completes.
-        // If sync_pos is still 0 there is no previous position to catch up
-        // to (and the buffer is already at dset_head_pos == 0 from
-        // construction), so skip the call to avoid an unsigned underflow.
-        if(synchronised and printer->get_sync_pos()>0) it->second.fast_forward(printer->get_sync_pos()-1);
+        if (printer->get_sync_pos() > 0)  // if 0, nothing to catch up to
+        {
+          // We subtract one because another increment will happen after
+          // the print statement (that triggered the creation of the new
+          // buffer) completes. (Subtraction is safe since get_sync_pos() > 0.
+          // Otherwise this would have lead to an underflow.
+          if(synchronised) it->second.fast_forward(printer->get_sync_pos()-1);
+        }        
       }
 
       if( it == local_buffers.end() )
