@@ -668,14 +668,14 @@ namespace Gambit {
       /// Close hdf5 group
       SIMPLE_CALL(hid_t, closeGroup,  hid_t, H5Gclose, "close", "group", "group")
 
-      /// State for errorsOff() / errorsOn(). File-local: only the two
-      /// functions below should ever touch these. The bool guard ensures
+      /// State for errorsOff() / errorsOn(). The bool guard ensures
       /// that a redundant errorsOff() called while errors are already off
       /// does NOT overwrite the saved handler with the NULL handler we
       /// installed ourselves -- otherwise the matching errorsOn() would
       /// "restore" NULL and silently disable HDF5 error reporting for
       /// the rest of the process.
-      namespace {
+      namespace
+      {
          bool errors_are_off = false;
          H5E_auto2_t saved_func = nullptr;
          void *saved_client_data = nullptr;
