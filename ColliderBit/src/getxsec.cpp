@@ -1953,16 +1953,39 @@ namespace Gambit
       xsec total_xsec;
       for (size_t i = 0; i < vars.pid1.size(); i++)
       {
-        // TODO: What to put as the codes here, Would  eneed to be careful to make sure they match Pythia?
-        int code = vars.pid1[i];// input_variables.pid2[i]; // TODO: Just for testing, I am setting the code to the first pid1, this is incorrect!!
         xsec cross_section = res[i].cross_section;
         total_xsec = total_xsec + cross_section;
-        double process_xsec = cross_section.central; //combined_process_xsec[code];
-        double process_xsecErr = cross_section.upper - cross_section.central; //combined_process_xsecErr[code];
-        process_xsec_container newprocess;
-        newprocess.set_xsec(process_xsec, process_xsecErr);
-        newprocess.set_process_code(code);
-        int_proc_xsec_map[code] = newprocess;
+        double process_xsec = cross_section.central;
+        double process_xsecErr = cross_section.upper - cross_section.central;
+
+        // Look up all Pythia process codes for this (pid1, pid2) pair.
+        // PID_pair sorts its arguments so ordering in smoking's output doesn't matter.
+        PID_pair pp(vars.pid1[i], vars.pid2[i]);
+        auto range = all_PID_pairs_to_process_codes().equal_range(pp);
+
+        if (range.first == range.second)
+        {
+          ColliderBit_warning().raise(LOCAL_INFO,
+            "smoking returned a cross-section for PID pair (" +
+            std::to_string(vars.pid1[i]) + ", " + std::to_string(vars.pid2[i]) +
+            ") that has no entry in all_PID_pairs_to_process_codes. Skipping.");
+          continue;
+        }
+
+        std::vector<int> codes_for_pair;
+        for (auto it = range.first; it != range.second; ++it)
+          codes_for_pair.push_back(it->second);
+
+        // Register all Pythia codes for this PID pair, noting codes that share the xsec.
+        for (int code : codes_for_pair)
+        {
+          process_xsec_container newprocess;
+          newprocess.set_xsec(process_xsec, process_xsecErr);
+          newprocess.set_process_code(code);
+          for (int other : codes_for_pair)
+            if (other != code) newprocess.register_process_sharing_xsec(other);
+          int_proc_xsec_map[code] = newprocess;
+        }
       }
       ProcessXsecContainer[collider] = int_proc_xsec_map;
       xsec_container xsContainer;
