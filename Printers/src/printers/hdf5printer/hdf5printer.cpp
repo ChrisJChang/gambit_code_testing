@@ -1316,6 +1316,12 @@ namespace Gambit
         printer_error().raise(LOCAL_INFO, errmsg.str());
       }
 
+      // If sync_pos is still 0 then no point has yet been registered as the
+      // current sync position, so there is no "previous slot" for buffers to
+      // catch up to. Return early to avoid the unsigned underflow that would
+      // otherwise occur in get_sync_pos()-1 below.
+      if(get_sync_pos()==0) return;
+
       // Determine the desired sync position
       const unsigned long sync_pos = get_sync_pos()-1;
 
