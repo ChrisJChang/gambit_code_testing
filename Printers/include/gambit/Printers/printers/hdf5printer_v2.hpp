@@ -294,8 +294,7 @@ namespace Gambit
              }
              // dtype is no longer needed after the equality check; close it
              // here to avoid leaking one HDF5 type handle per flush per
-             // dataset (write_RA_buffer below already does this at its
-             // matching H5Dget_type site).
+             // dataset.
              H5Tclose(dtype);
 
              std::size_t required_size = target_pos+length;
