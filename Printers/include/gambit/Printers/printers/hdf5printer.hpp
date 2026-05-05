@@ -557,7 +557,7 @@ namespace Gambit
           // We subtract one because another increment will happen after
           // the print statement (that triggered the creation of the new
           // buffer) completes. (Subtraction is safe since get_sync_pos() > 0.
-          // Otherwise this would have lead to an underflow.
+          // Otherwise this would have led to an underflow.)
           if(synchronised) it->second.fast_forward(printer->get_sync_pos()-1);
         }        
       }
