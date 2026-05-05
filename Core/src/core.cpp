@@ -635,6 +635,18 @@ namespace Gambit
       }
     }
 
+    // Fast track for the options "--help", "-h", "--version" or no arguments 
+    // at all. These all end in process_primary_options bailing out with usage
+    // or version text via SilentShutdownException, so we can skip the database
+    // build (check_databases) and the scanner-plugin enumeration done further down.
+    if (command == "--help" || command == "-h" || command == "--version" || command == "none")
+    {
+      if (not processed_options) (void) process_primary_options(argc, argv);
+      // process_primary_options is expected to bail() / throw for these
+      // inputs. If for some reason it returns, fall through to the existing
+      // logic below.
+    }
+
     // Initial list of valid diagnostic commands
     std::vector<str> valid_commands = initVector<str>("modules", "backends", "models", "capabilities", "scanners", "test-functions");
 
