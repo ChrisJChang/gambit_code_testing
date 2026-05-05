@@ -119,11 +119,15 @@ namespace Gambit
       for (std::tie(it, iend) = in_edges(vertex, graph);
           it != iend; ++it)
       {
-        if (std::find(myVertexList.begin(), myVertexList.end(), source(*it, graph)) == myVertexList.end() )
+        // Use the fact that insert() returns {iterator, true} when 
+        // the parent is new, in which case we recurse. (Should give 
+        // a O(log N) tree traversal rather than O(N) when using 
+        // std::find + insert.)
+        const VertexID parent = source(*it, graph);
+        if (myVertexList.insert(parent).second)
         {
-          myVertexList.insert(source(*it, graph));
-          getParentVertices(source(*it, graph), graph, myVertexList);
-        }
+          getParentVertices(parent, graph, myVertexList);          
+        }  
       }
     }
 
