@@ -333,15 +333,9 @@ namespace Gambit
         std::string metadata_group; // HDF5 group location to store metadata
 
         // Handles for HDF5 files and groups containing the datasets.
-        // Default-initialised to -1 (the convention this class already uses
-        // as the "unset HDF5 handle" sentinel; see e.g. the get_location() /
-        // get_RA_location() / get_metadata_location() checks). Only the
-        // primary printer's constructor assigns the file/group handles
-        // (file_id, group_id, RA_group_id, metadata_id); aux instances
-        // inherit the *_location_id values from the primary. The default
-        // initialisers ensure that any code path that mistakenly reads one
-        // of these on an aux instance gets a deterministic invalid handle
-        // rather than indeterminate memory.
+        // Only the primary printer's constructor assigns the file/group 
+        // handles (file_id, group_id, RA_group_id, metadata_id). Aux instances
+        // inherit the *_location_id values from the primary.
         hid_t file_id = -1;
         hid_t group_id = -1;
         hid_t RA_group_id = -1;
@@ -556,8 +550,7 @@ namespace Gambit
         {
           // We subtract one because another increment will happen after
           // the print statement (that triggered the creation of the new
-          // buffer) completes. (Subtraction is safe since get_sync_pos() > 0.
-          // Otherwise this would have led to an underflow.)
+          // buffer) completes.
           if(synchronised) it->second.fast_forward(printer->get_sync_pos()-1);
         }        
       }

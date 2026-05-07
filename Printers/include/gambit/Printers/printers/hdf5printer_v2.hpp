@@ -78,13 +78,9 @@ namespace Gambit
     /// Largest allowed size of buffers. Size can be dynamically set from 1 to this number.
     static const std::size_t MAX_BUFFER_SIZE = 100000;
 
-    // The integer-encoded type ID for buffer-data messages
-    // (formerly used by h5v2_bufdata_type / h5v2_bufdata_values; the
-    // type encoding itself is still in use by the gather_and_print
-    // path via HDF5bufferchunk and add_to_buffers).
+    // The integer-encoded type ID for buffer-data messages.
     // Need a unique integer for each type. We can encode these
     // with a template function:
-
     template<class T>
     std::set<T> set_diff(const std::set<T>& set1, const std::set<T>& set2)
     {
@@ -292,9 +288,8 @@ namespace Gambit
                  errmsg << "Error! Tried to write to dataset (name="<<myname()<<") with type id "<<dtype<<" but expected it to have type id "<<expected_dtype<<". This is a bug, please report it.";
                  printer_error().raise(LOCAL_INFO, errmsg.str());
              }
-             // dtype is no longer needed after the equality check; close it
-             // here to avoid leaking one HDF5 type handle per flush per
-             // dataset.
+             // dtype is no longer needed, close it here to avoid leaking one 
+             // HDF5 type handle per flush per dataset.
              H5Tclose(dtype);
 
              std::size_t required_size = target_pos+length;

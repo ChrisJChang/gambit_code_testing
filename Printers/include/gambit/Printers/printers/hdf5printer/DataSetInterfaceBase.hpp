@@ -188,20 +188,13 @@ namespace Gambit {
       /// Deliberately does NOT close the underlying HDF5 dataset.
       ///
       /// DataSetInterfaceBase (and its derived classes) are stored by value
-      /// and assigned-from-temporary in several places, e.g.
-      ///   _dsetdata = DataSetInterfaceScalar<T,CHUNKLENGTH>(loc, name, ...);
-      ///   local_buffers[key] = BuffType(loc, label, vertexID, ...);
-      /// In each case a temporary is constructed, then copy-/move-assigned
-      /// into a member or container slot, then destroyed. With the default
-      /// copy semantics both objects hold the same hid_t dset_id, so
-      /// closing in the destructor would invalidate the handle held by the
-      /// surviving copy. The actual close therefore lives in the explicit
-      /// closeDataSet() method below, which is driven by
+      /// and assigned-from-temporary in several places. In such cases a 
+      /// temporary is constructed, then copy-/move-assigned into a member or 
+      /// container slot, then destroyed. Closing here in the destructor would 
+      /// invalidate the handle held by the surviving copy. The actual close 
+      /// therefore lives in the explicit closeDataSet() method below, used by
       /// VertexBufferNumeric1D_HDF5::finalise() during the printer's
-      /// finalise() pass. If finalise() is bypassed (e.g. an exception
-      /// during scan setup or shutdown), HDF5's own H5Fclose() at process
-      /// exit will auto-close any still-open dataset handles and flush
-      /// their pending I/O, so the file on disk remains well-formed.
+      /// finalise() pass.
       template<class T, std::size_t RR, std::size_t CL>
       DataSetInterfaceBase<T,RR,CL>::~DataSetInterfaceBase()
       {
