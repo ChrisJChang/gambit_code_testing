@@ -1,0 +1,278 @@
+#!/usr/bin/env python3
+"""
+gamby2 - GAMBIT build wrapper: draggable terminal window with status overlay.
+
+Usage:
+    gamby2 make [MAKE_ARGS...]
+
+Opens a single, draggable window that contains an embedded terminal showing
+the live build output.  A status image floats in the bottom-right corner:
+  • Green square (happy.png) while the build is running.
+  • Red square   (sad.png)   if a build error is detected.
+
+The title bar shows the command while building, then ✓ or ✗ on completion.
+The window stays open after the build so you can scroll the output; close it
+manually to exit.
+
+Images live in tools/gamby_images/ (same directory as this script) and can be
+replaced with any PNG — filenames must remain happy.png and sad.png.
+
+Requires: python3-gi, gir1.2-gtk-3.0, gir1.2-vte-2.91
+
+Environment variables:
+  GAMBY_IMAGES_DIR   Override the image directory.
+
+Setup (add gamby2 to your PATH):
+    export PATH="$PATH:/path/to/gambit/tools"
+"""
+
+import fcntl
+import os
+import pty
+import struct
+import subprocess
+import sys
+import termios
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+IMAGES_DIR = Path(os.environ.get("GAMBY_IMAGES_DIR", str(SCRIPT_DIR / "gamby_images")))
+
+_ERROR_SUBSTRINGS = (": error:", ": fatal error:", ": undefined reference",)
+_MAKE_ERROR_MARKER = ("make[", "*** [")
+
+
+def _is_error_line(line: str) -> bool:
+    lo = line.lower()
+    for pat in _ERROR_SUBSTRINGS:
+        if pat in lo:
+            return True
+    if _MAKE_ERROR_MARKER[0] in line and _MAKE_ERROR_MARKER[1] in line:
+        return True
+    if line.startswith("CMake Error") or line.startswith("FAILED:"):
+        return True
+    return False
+
+
+def cmd_make(args: list) -> int:
+    try:
+        import gi
+        gi.require_version("Gtk", "3.0")
+        gi.require_version("Vte", "2.91")
+        gi.require_version("GdkPixbuf", "2.0")
+        from gi.repository import Gtk, Vte, GLib, GdkPixbuf
+    except Exception as exc:
+        print(f"gamby2: GTK/VTE unavailable ({exc}), running make directly",
+              file=sys.stderr)
+        return subprocess.run(["make"] + args).returncode
+
+    happy_path = str(IMAGES_DIR / "happy.png")
+    sad_path   = str(IMAGES_DIR / "sad.png")
+    cmd        = ["make"] + args
+
+    # ------------------------------------------------------------------
+    # Window
+    # ------------------------------------------------------------------
+    win = Gtk.Window()
+    title_base = "gamby make" + (f"  {' '.join(args)}" if args else "")
+    win.set_title(title_base)
+    win.set_default_size(900, 600)
+
+    # Outer box: [overlay with terminal+image] [scrollbar]
+    outer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+
+    overlay = Gtk.Overlay()
+
+    terminal = Vte.Terminal()
+    terminal.set_scrollback_lines(50_000)
+    overlay.add(terminal)
+
+    # Status image — floats over the bottom-right of the terminal.
+    status_img = Gtk.Image()
+    status_img.set_halign(Gtk.Align.END)
+    status_img.set_valign(Gtk.Align.END)
+    status_img.set_margin_end(16)
+    status_img.set_margin_bottom(16)
+    overlay.add_overlay(status_img)
+    # Mouse events pass through the image so the terminal stays interactive.
+    overlay.set_overlay_pass_through(status_img, True)
+
+    outer.pack_start(overlay, True, True, 0)
+
+    scrollbar = Gtk.Scrollbar(orientation=Gtk.Orientation.VERTICAL)
+    scrollbar.set_adjustment(terminal.get_vadjustment())
+    outer.pack_start(scrollbar, False, False, 0)
+
+    win.add(outer)
+
+    def _load_image(path: str) -> None:
+        try:
+            pb = GdkPixbuf.Pixbuf.new_from_file(path)
+            status_img.set_from_pixbuf(pb)
+        except Exception as exc:
+            print(f"gamby2: cannot load {path}: {exc}", file=sys.stderr)
+
+    _load_image(happy_path)
+
+    # ------------------------------------------------------------------
+    # PTY for make
+    # ------------------------------------------------------------------
+    master_fd, slave_fd = pty.openpty()
+
+    # Non-blocking reads so we can safely drain on HUP without hanging.
+    flags = fcntl.fcntl(master_fd, fcntl.F_GETFL)
+    fcntl.fcntl(master_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+    def _sync_pty_size(*_) -> None:
+        rows = max(terminal.get_row_count(), 1)
+        cols = max(terminal.get_column_count(), 1)
+        try:
+            fcntl.ioctl(master_fd, termios.TIOCSWINSZ,
+                        struct.pack("HHHH", rows, cols, 0, 0))
+        except OSError:
+            pass
+
+    terminal.connect("char-size-changed", _sync_pty_size)
+
+    # ------------------------------------------------------------------
+    # Launch make
+    # ------------------------------------------------------------------
+    exit_code  = [1]
+    finalized  = [False]
+    err_seen   = [False]
+    tail       = [b""]
+
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdin=slave_fd,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            close_fds=True,
+        )
+    except FileNotFoundError:
+        os.close(master_fd)
+        os.close(slave_fd)
+        print("gamby2: 'make' not found in PATH", file=sys.stderr)
+        return 127
+
+    os.close(slave_fd)   # parent only uses the master end
+    _sync_pty_size()
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+    def _process_chunk(chunk: bytes) -> None:
+        """Feed bytes to the terminal widget and scan for error lines."""
+        terminal.feed(chunk)
+        if err_seen[0]:
+            return
+        text = (tail[0] + chunk).decode("utf-8", errors="replace")
+        *complete, rest = text.split("\n")
+        tail[0] = rest.encode("utf-8")
+        for line in complete:
+            if _is_error_line(line):
+                err_seen[0] = True
+                _load_image(sad_path)
+                return
+
+    def _finalize() -> None:
+        if finalized[0]:
+            return
+        finalized[0] = True
+        proc.wait()
+        exit_code[0] = proc.returncode
+        if proc.returncode != 0 and not err_seen[0]:
+            _load_image(sad_path)
+        mark = "✓" if proc.returncode == 0 else "✗"
+        win.set_title(f"{mark} {title_base}")
+        try:
+            os.close(master_fd)
+        except OSError:
+            pass
+
+    # ------------------------------------------------------------------
+    # GLib I/O watch — called whenever data arrives on the PTY master
+    # ------------------------------------------------------------------
+    def _on_pty_data(source, condition) -> bool:
+        if condition & (GLib.IOCondition.HUP | GLib.IOCondition.ERR):
+            # Drain any bytes that arrived together with HUP.
+            while True:
+                try:
+                    chunk = os.read(master_fd, 4096)
+                    if not chunk:
+                        break
+                    _process_chunk(chunk)
+                except BlockingIOError:
+                    break
+                except OSError:
+                    break
+            _finalize()
+            return False          # remove this watch
+
+        try:
+            chunk = os.read(master_fd, 4096)
+        except BlockingIOError:
+            return True           # spurious wakeup, keep watching
+        except OSError:
+            _finalize()
+            return False
+
+        if not chunk:
+            _finalize()
+            return False
+
+        _process_chunk(chunk)
+        return True
+
+    GLib.io_add_watch(
+        master_fd,
+        GLib.IOCondition.IN | GLib.IOCondition.HUP | GLib.IOCondition.ERR,
+        _on_pty_data,
+    )
+
+    # Forward keyboard input from the VTE widget back to make's PTY.
+    def _on_commit(term, text, size) -> None:
+        try:
+            os.write(master_fd, text.encode("utf-8", errors="replace"))
+        except OSError:
+            pass
+
+    terminal.connect("commit", _on_commit)
+
+    # Kill make if the user closes the window mid-build.
+    def _on_destroy(widget) -> None:
+        if proc.poll() is None:
+            try:
+                proc.terminate()
+            except OSError:
+                pass
+        Gtk.main_quit()
+
+    win.connect("destroy", _on_destroy)
+    win.show_all()
+
+    Gtk.main()
+    return exit_code[0]
+
+
+# ----------------------------------------------------------------------
+# Entry point
+# ----------------------------------------------------------------------
+def main() -> None:
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        print(__doc__)
+        sys.exit(0)
+
+    command = sys.argv[1]
+    args    = sys.argv[2:]
+
+    if command == "make":
+        sys.exit(cmd_make(args))
+    else:
+        print(f"gamby2: unknown command '{command}'", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
