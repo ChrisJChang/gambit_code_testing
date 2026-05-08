@@ -23,10 +23,11 @@ Setup (add gamby to your PATH):
 """
 
 import os
+import pty
+import select
 import sys
 import subprocess
 import tempfile
-import threading
 import signal
 from pathlib import Path
 
@@ -115,6 +116,14 @@ def _stop_overlay(proc, state_file: str) -> None:
 # Build runner
 # ---------------------------------------------------------------------------
 def _run_make(args: list, state_file: str) -> int:
+    """Run make under a PTY so the subprocess sees a real terminal.
+
+    Using a PTY means make and the compiler inherit a TTY file descriptor,
+    so GCC/Clang colour diagnostics and make's own progress output are
+    preserved exactly as they would be in a normal interactive session.
+    stdout and stderr are merged into the single PTY stream (the same way a
+    real terminal works) and forwarded to our own stdout.
+    """
     cmd = ["make"] + args
     error_signalled = False
 
@@ -124,39 +133,87 @@ def _run_make(args: list, state_file: str) -> int:
             error_signalled = True
             _write_state(state_file, "sad")
 
-    def _stream(pipe, dest):
-        for raw in pipe:
-            dest.buffer.write(raw if isinstance(raw, bytes) else raw.encode())
-            dest.buffer.flush()
-            text = raw if isinstance(raw, str) else raw.decode("utf-8", errors="replace")
-            if _is_error_line(text):
-                _on_error()
+    master_fd, slave_fd = pty.openpty()
 
     try:
         proc = subprocess.Popen(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            close_fds=True,
         )
     except FileNotFoundError:
+        os.close(master_fd)
+        os.close(slave_fd)
         print("gamby: 'make' not found in PATH", file=sys.stderr)
         return 127
 
-    t_out = threading.Thread(target=_stream, args=(proc.stdout, sys.stdout), daemon=True)
-    t_err = threading.Thread(target=_stream, args=(proc.stderr, sys.stderr), daemon=True)
-    t_out.start()
-    t_err.start()
+    os.close(slave_fd)  # parent only reads from the master end
+
+    # Incomplete line buffer for cross-chunk error detection.
+    tail = b""
 
     try:
-        proc.wait()
+        while True:
+            try:
+                readable, _, _ = select.select([master_fd], [], [], 0.05)
+            except (ValueError, select.error):
+                break
+
+            if readable:
+                try:
+                    chunk = os.read(master_fd, 4096)
+                except OSError:
+                    # EIO is the normal EOF signal when the slave side closes.
+                    break
+
+                if not chunk:
+                    break
+
+                sys.stdout.buffer.write(chunk)
+                sys.stdout.buffer.flush()
+
+                # Scan for error lines, keeping a partial line across chunks.
+                text = (tail + chunk).decode("utf-8", errors="replace")
+                *complete, tail_str = text.split("\n")
+                tail = tail_str.encode("utf-8")
+                for line in complete:
+                    if _is_error_line(line):
+                        _on_error()
+
+            elif proc.poll() is not None:
+                # Drain any last bytes after the process exits.
+                try:
+                    while True:
+                        r, _, _ = select.select([master_fd], [], [], 0)
+                        if not r:
+                            break
+                        chunk = os.read(master_fd, 4096)
+                        if not chunk:
+                            break
+                        sys.stdout.buffer.write(chunk)
+                        sys.stdout.buffer.flush()
+                        text = (tail + chunk).decode("utf-8", errors="replace")
+                        *complete, tail_str = text.split("\n")
+                        tail = tail_str.encode("utf-8")
+                        for line in complete:
+                            if _is_error_line(line):
+                                _on_error()
+                except OSError:
+                    pass
+                break
+
     except KeyboardInterrupt:
         proc.send_signal(signal.SIGINT)
+    finally:
+        try:
+            os.close(master_fd)
+        except OSError:
+            pass
         proc.wait()
 
-    t_out.join()
-    t_err.join()
+    if tail and _is_error_line(tail.decode("utf-8", errors="replace")):
+        _on_error()
 
     if proc.returncode != 0:
         _on_error()
