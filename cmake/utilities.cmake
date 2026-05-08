@@ -308,6 +308,29 @@ function(add_gambit_executable executablename LIBRARIES)
   cmake_parse_arguments(ARG "" "" "SOURCES;HEADERS;" ${ARGN})
 
   add_executable(${executablename} ${ARG_SOURCES} ${ARG_HEADERS})
+  # ENABLE_EXPORTS adds -rdynamic (Linux) / -export_dynamic (macOS) to the linker,
+  # placing all default-visibility symbols into the executable's dynamic symbol table.
+  # This is needed so that backends and scanner plugins loaded at runtime via dlopen
+  # can resolve symbols from statically linked contrib libraries (notably yaml-cpp
+  # exception typeinfo, e.g. _ZTIN4YAML13BadConversionE).
+  #
+  # ENABLE_EXPORTS is intentionally set via a target property rather than via
+  # CMAKE_CXX_FLAGS. The visibility logic above (CMakeLists.txt) checks CMAKE_CXX_FLAGS
+  # for -rdynamic and sets CMAKE_CXX_VISIBILITY_PRESET=hidden when it is absent.
+  # Using a target property here means that check is unaffected: GAMBIT's own code
+  # is still compiled with -fvisibility=hidden and its internal symbols remain hidden.
+  # Only symbols compiled with default visibility (e.g. yaml-cpp, which overrides the
+  # preset via CXX_VISIBILITY_PRESET=default on its target) are exported. This keeps
+  # the exported symbol set minimal and avoids polluting the global namespace with
+  # GAMBIT internals.
+  #
+  # The one consequence to be aware of: default-visibility symbols exported from the
+  # executable are visible to all dlopen'd plugins, so a plugin that bundles its own
+  # copy of a contrib library (e.g. a different yaml-cpp version) may have its calls
+  # interposed by the executable's copy. For GAMBIT's own backends this is intentional
+  # (shared typeinfo pointers are required for cross-DSO exception catching), but
+  # third-party backends that require a private copy of a library should be loaded
+  # with RTLD_DEEPBIND to opt out of interposition.
   set_target_properties(${executablename} PROPERTIES
     EXCLUDE_FROM_ALL 1
     ENABLE_EXPORTS TRUE
