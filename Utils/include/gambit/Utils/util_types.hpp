@@ -44,16 +44,18 @@
 #ifndef __util_types_hpp__
 #define __util_types_hpp__
 
+#include <iostream>
 #include <map>
 #include <string>
 #include <sstream>
+#include <vector>
 #include <omp.h>
 #include <cstring>
 #include <complex>
 #include <memory>
 
 #include "gambit/Utils/standalone_error_handlers.hpp"
-#include "gambit/Utils/variadic_functions.hpp"
+#include "gambit/Utils/variadic_types.hpp"
 #include "gambit/Utils/local_info.hpp"
 
 
