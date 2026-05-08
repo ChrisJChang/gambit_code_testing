@@ -2569,8 +2569,8 @@ if(NOT ditched_${name}_${ver})
 endif()
 
 
-# simplexs
-set(name "simplexs")
+# simple_xs
+set(name "simple_xs")
 set(ver "1.0")
 set(dl "https://github.com/GambitBSM/gambit_simplexs/archive/refs/heads/main.zip")
 set(dir "${PROJECT_SOURCE_DIR}/Backends/examples/simple_xs/1.0/")

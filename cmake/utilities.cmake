@@ -265,14 +265,16 @@ macro(strip_library KEY LIBRARIES)
   set(FOUND_KEY2 "")
 endmacro()
 
-# Function to add a GAMBIT custom command and target
+# Function to add a GAMBIT custom command and target.
+# A caller may set ${HARVESTER}_EXTRA_ARGS before invoking this 
+# macro to pass additional command-line flags to the harvester.
 macro(add_gambit_custom target filename HARVESTER DEPS)
   set(ditch_string "")
   if (NOT "${ARGN}" STREQUAL "")
     set(ditch_string "-x __not_a_real_name__,${ARGN}")
   endif()
   add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/${filename}
-                     COMMAND ${Python3_EXECUTABLE} ${${HARVESTER}} ${ditch_string}
+                     COMMAND ${Python3_EXECUTABLE} ${${HARVESTER}} ${ditch_string} ${${HARVESTER}_EXTRA_ARGS}
                      COMMAND touch ${CMAKE_BINARY_DIR}/${filename}
                      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                      DEPENDS ${${HARVESTER}}
@@ -741,3 +743,205 @@ endmacro()
 macro(BOSS_backend name backend_version ${ARGN})
   BOSS_backend_full(${name} ${backend_version} ${ARGN})
 endmacro()
+
+
+# Function to translate -DBits="Bit1;Bit2" into additions to ${itch}.
+# Call before retrieve_bits; reads the cmake variable `Bits` and the
+# already-populated ${ALL_GAMBIT_BITS}. ScannerBit is implicitly kept;
+# any explicit -Ditch entries also stand.
+function(gambit_translate_bits_into_itch)
+  if(NOT DEFINED Bits OR "${Bits}" STREQUAL "")
+    return()
+  endif()
+
+  message("${BoldYellow}-- Bits=\"${Bits}\" requested; restricting build to these Bits (+ ScannerBit).${ColourReset}")
+
+  # Warn about -DBits entries that don't match a real Bit directory.
+  set(_unknown_Bits "")
+  foreach(_b ${Bits})
+    string(TOLOWER "${_b}" _b_lower)
+    set(_match_found NO)
+    foreach(_d ${ALL_GAMBIT_BITS})
+      string(TOLOWER "${_d}" _d_lower)
+      if(_d_lower STREQUAL _b_lower)
+        set(_match_found YES)
+      endif()
+    endforeach()
+    if(NOT _match_found)
+      list(APPEND _unknown_Bits "${_b}")
+    endif()
+  endforeach()
+  if(_unknown_Bits)
+    message("${BoldRed}   -DBits entries with no matching Bit directory (ignored): ${_unknown_Bits}${ColourReset}")
+  endif()
+
+  # Add every non-listed (and non-ScannerBit) Bit to ${itch}.
+  set(_added_to_itch "")
+  set(_local_itch "${itch}")
+  foreach(_d ${ALL_GAMBIT_BITS})
+    string(TOLOWER "${_d}" _d_lower)
+    if(NOT _d_lower STREQUAL "scannerbit")
+      set(_keep NO)
+      foreach(_b ${Bits})
+        string(TOLOWER "${_b}" _b_lower)
+        if(_d_lower STREQUAL _b_lower)
+          set(_keep YES)
+        endif()
+      endforeach()
+      if(NOT _keep)
+        list(APPEND _added_to_itch ${_d})
+        set(_local_itch "${_local_itch};${_d}")
+      endif()
+    endif()
+  endforeach()
+  if(_added_to_itch)
+    message("${Yellow}   Bits added to ditch list by -DBits: ${_added_to_itch}${ColourReset}")
+  endif()
+  set(itch "${_local_itch}" PARENT_SCOPE)
+endfunction()
+
+
+# Function to default GAMBIT_TRIM_BACKEND_INTERFACES to ON if any on-disk Bit
+# was excluded, OFF otherwise. A user-specified value (ON or OFF) takes
+# precedence.
+function(_gambit_resolve_trim_default)
+  if(DEFINED GAMBIT_TRIM_BACKEND_INTERFACES)
+    return()
+  endif()
+  set(_user_narrowed FALSE)
+  foreach(_d ${ALL_GAMBIT_BITS})
+    if(NOT (";${GAMBIT_BITS};" MATCHES ";${_d};"))
+      set(_user_narrowed TRUE)
+    endif()
+  endforeach()
+  if(_user_narrowed)
+    set(GAMBIT_TRIM_BACKEND_INTERFACES ON CACHE BOOL
+        "Skip backend interfaces that no enabled Bit references." FORCE)
+    message("${BoldYellow}-- One or more Bits were excluded; enabling GAMBIT_TRIM_BACKEND_INTERFACES=ON.${ColourReset}")
+  else()
+    set(GAMBIT_TRIM_BACKEND_INTERFACES OFF CACHE BOOL
+        "Skip backend interfaces that no enabled Bit references.")
+  endif()
+endfunction()
+
+
+# Function to print a configure-time summary of which backend interfaces are
+# active and which are disabled, and to return the list of disabled backend
+# names in ${out_disabled_canonical} (canonical BACKENDNAMEs).
+function(_gambit_print_optin_summary bits_with_commas force_with_commas out_disabled_canonical)
+  execute_process(
+    COMMAND ${Python3_EXECUTABLE} -c "
+import sys
+sys.path.insert(0, 'Utils/scripts')
+from harvesting_tools import derive_optin_backend_excludes
+bits = [b for b in '${bits_with_commas}'.split(',') if b]
+force = [b for b in '${force_with_commas}'.split(',') if b]
+auto_excluded, used, all_be = derive_optin_backend_excludes(
+    bits, '.', './Backends/include/gambit/Backends/frontends', force)
+unknown_force = [f for f in force if f not in all_be]
+print('USED:' + ','.join(sorted(used)))
+print('SKIPPED:' + ','.join(sorted(auto_excluded)))
+print('UNKNOWN_FORCE:' + ','.join(unknown_force))
+print('TOTAL:{0}'.format(len(all_be)))
+"
+    OUTPUT_VARIABLE _trim_summary
+    RESULT_VARIABLE _trim_rc
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
+  if(NOT _trim_rc EQUAL 0)
+    set(${out_disabled_canonical} "" PARENT_SCOPE)
+    return()
+  endif()
+
+  string(REGEX MATCH "USED:[^\n]*"          _used_line    "${_trim_summary}")
+  string(REGEX MATCH "SKIPPED:[^\n]*"       _skipped_line "${_trim_summary}")
+  string(REGEX MATCH "UNKNOWN_FORCE:[^\n]*" _unknown_line "${_trim_summary}")
+  string(REGEX MATCH "TOTAL:[0-9]+"         _total_line   "${_trim_summary}")
+  string(REPLACE "USED:"          "" _used_list     "${_used_line}")
+  string(REPLACE "SKIPPED:"       "" _skipped_list  "${_skipped_line}")
+  string(REPLACE "UNKNOWN_FORCE:" "" _unknown_force "${_unknown_line}")
+  string(REPLACE "TOTAL:"         "" _total_count   "${_total_line}")
+  string(REPLACE "," ";" _used_list_sc    "${_used_list}")
+  string(REPLACE "," ";" _skipped_list_sc "${_skipped_list}")
+  list(LENGTH _used_list_sc    _used_count)
+  list(LENGTH _skipped_list_sc _skipped_count)
+  if("${_used_list}" STREQUAL "")
+    set(_used_count 0)
+    set(_used_list_sc "")
+  endif()
+  if("${_skipped_list}" STREQUAL "")
+    set(_skipped_count 0)
+    set(_skipped_list_sc "")
+  endif()
+
+  message("${BoldYellow}-- GAMBIT_TRIM_BACKEND_INTERFACES is ON. Building ${_used_count} of ${_total_count} backend interfaces.${ColourReset}")
+  if(NOT "${_unknown_force}" STREQUAL "")
+    message("${BoldRed}   -DGAMBIT_FORCE_BACKEND_INTERFACE entries with no matching backend (ignored): ${_unknown_force}${ColourReset}")
+  endif()
+
+  # Print every backend; active in white, disabled in yellow with a [disabled] tag.
+  set(_all_backends ${_used_list_sc} ${_skipped_list_sc})
+  list(SORT _all_backends)
+  foreach(_be ${_all_backends})
+    if(NOT "${_be}" STREQUAL "")
+      list(FIND _skipped_list_sc "${_be}" _is_skipped)
+      if(_is_skipped EQUAL -1)
+        message("${BoldWhite}     ${_be}${ColourReset}")
+      else()
+        message("${Yellow}     ${_be} [disabled]${ColourReset}")
+      endif()
+    endif()
+  endforeach()
+  if(_skipped_count GREATER 0)
+    message("${Yellow}   Pass -DGAMBIT_FORCE_BACKEND_INTERFACE=\"Name1;Name2\" to keep one anyway,${ColourReset}")
+    message("${Yellow}   or -DGAMBIT_TRIM_BACKEND_INTERFACES=OFF to disable trimming.${ColourReset}")
+  endif()
+
+  set(${out_disabled_canonical} "${_skipped_list_sc}" PARENT_SCOPE)
+endfunction()
+
+
+# Function to resolve the opt-in build configuration after retrieve_bits has
+# set ${GAMBIT_BITS}. Sets BACKEND_HARVESTER_EXTRA_ARGS and
+# update_cmakelists_extra_args in the caller's scope, and (when trimming is
+# enabled) appends the disabled backend names to ${itch} so that the existing
+# check_ditch_status mechanism in cmake/externals.cmake also disables the
+# corresponding download/install targets.
+function(gambit_configure_optin_build)
+  _gambit_resolve_trim_default()
+
+  set(_extra_args "")
+  if(GAMBIT_TRIM_BACKEND_INTERFACES)
+    string(REPLACE ";" "," _bits_with_commas "${GAMBIT_BITS}")
+    list(APPEND _extra_args --bits=${_bits_with_commas})
+
+    set(_force_with_commas "")
+    if(DEFINED GAMBIT_FORCE_BACKEND_INTERFACE AND NOT "${GAMBIT_FORCE_BACKEND_INTERFACE}" STREQUAL "")
+      string(REPLACE ";" "," _force_with_commas "${GAMBIT_FORCE_BACKEND_INTERFACE}")
+      list(APPEND _extra_args --force-backends=${_force_with_commas})
+    endif()
+    if(GAMBIT_VERBOSE_BUILD)
+      list(APPEND _extra_args --verbose-build)
+    endif()
+
+    _gambit_print_optin_summary("${_bits_with_commas}" "${_force_with_commas}" _disabled_backends)
+    foreach(_be ${_disabled_backends})
+      list(APPEND itch "${_be}")
+    endforeach()
+    set(itch "${itch}" PARENT_SCOPE)
+  endif()
+
+  set(BACKEND_HARVESTER_EXTRA_ARGS "${_extra_args}" PARENT_SCOPE)
+  set(update_cmakelists_extra_args "${_extra_args}" PARENT_SCOPE)
+endfunction()
+
+
+# Function to print the comma-separated list of backend make targets that
+# survived the ditch / opt-in pass. The list is populated as a side-effect
+# of add_extra_targets in cmake/externals.cmake, so call this after
+# cmake/externals.cmake has been included.
+function(gambit_print_available_backend_targets)
+  set(_targets "${GAMBIT_AVAILABLE_BACKEND_TARGETS}")
+  list(SORT _targets)
+  string(REPLACE ";" ", " _targets_csv "${_targets}")
+  message("${BoldYellow}-- Available backend make targets: ${_targets_csv}${ColourReset}")
+endfunction()

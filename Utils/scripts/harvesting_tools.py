@@ -686,6 +686,120 @@ def retrieve_generic_headers(verbose, starting_dir, kind, excludes, exclude_list
     return headers
 
 
+# Helpers for the opt-in build path (-Dbits / GAMBIT_AUTO_TRIM_BACKENDS).
+_SOURCE_EXTS = (".cpp", ".cc", ".c", ".hpp", ".hh", ".h")
+
+def derive_backendname_from_filename(stem):
+    """Derive a backend name from a frontend filename stem by dropping version-number tokens (e.g. DarkSUSY_MSSM_6_4_0 -> DarkSUSY_MSSM)."""
+    return "_".join(p for p in stem.split("_") if p and not p[0].isdigit())
+
+
+def get_all_backendnames(frontend_dir):
+    """Return the set of distinct BACKENDNAMEs declared by frontend headers, with a filename fallback for BOSSed frontends."""
+    backends = set()
+    if not os.path.isdir(frontend_dir):
+        return backends
+    define_re = re.compile(r'^\s*#\s*define\s+BACKENDNAME\s+(\S+)', re.MULTILINE)
+    for fn in os.listdir(frontend_dir):
+        if not fn.endswith(".hpp"): continue
+        path = os.path.join(frontend_dir, fn)
+        try:
+            with io.open(path, "r", encoding="utf-8", errors="replace") as f:
+                text = f.read()
+        except (IOError, OSError):
+            continue
+        m = define_re.search(text)
+        if m:
+            backends.add(m.group(1))
+        else:
+            backends.add(derive_backendname_from_filename(fn[:-len(".hpp")]))
+    return backends
+
+
+def derive_used_backends_via_token_sweep(enabled_bits, project_root, all_backends):
+    """Return the subset of all_backends whose name occurs as a token in any enabled Bit's include/src/examples tree."""
+    if not all_backends or not enabled_bits:
+        return set()
+    # Sort longest-first so the alternation prefers e.g. DarkSUSY_MSSM over DarkSUSY.
+    sorted_backends = sorted(all_backends, key=len, reverse=True)
+    # Match BACKENDNAME at a token boundary, but allow a trailing _suffix so
+    # that e.g. `BEreq::SUSYHD_MHiggs(...)` counts as a SUSYHD reference.
+    pattern = re.compile(
+        r'(?<![A-Za-z0-9_])(' +
+        '|'.join(re.escape(b) for b in sorted_backends) +
+        r')(?![A-Za-z0-9])')
+    hits = set()
+    subdirs = ("include", "src", "examples")
+    for bit in enabled_bits:
+        bit_dir = os.path.join(project_root, bit)
+        if not os.path.isdir(bit_dir):
+            continue
+        for sub in subdirs:
+            walk_root = os.path.join(bit_dir, sub)
+            if not os.path.isdir(walk_root):
+                continue
+            for root, _dirs, files in os.walk(walk_root):
+                for name in files:
+                    if not name.endswith(_SOURCE_EXTS):
+                        continue
+                    try:
+                        with io.open(os.path.join(root, name), "r",
+                                     encoding="utf-8", errors="replace") as f:
+                            text = f.read()
+                    except (IOError, OSError):
+                        continue
+                    for m in pattern.finditer(text):
+                        hits.add(m.group(1))
+                    if len(hits) == len(all_backends):
+                        return hits
+    return hits
+
+
+def derive_optin_backend_excludes(enabled_bits, project_root,
+                                  frontend_dir, force_keep_backends=None):
+    """Return (auto_excluded, used_backends, all_backends) for the opt-in build path."""
+    force_keep = set(force_keep_backends or [])
+    all_backends = get_all_backendnames(frontend_dir)
+    used = derive_used_backends_via_token_sweep(enabled_bits, project_root, all_backends)
+    used |= force_keep
+    auto_excluded = all_backends - used
+    return auto_excluded, used, all_backends
+
+
+def compute_bits_per_backend(project_root, frontend_dir):
+    """Return a dict mapping each canonical BACKENDNAME to the sorted list of Bit names whose include/src/examples tree mentions it."""
+    all_backends = get_all_backendnames(frontend_dir)
+    if not all_backends:
+        return {}
+    sorted_backends = sorted(all_backends, key=len, reverse=True)
+    pattern = re.compile(
+        r'(?<![A-Za-z0-9_])(' +
+        '|'.join(re.escape(b) for b in sorted_backends) +
+        r')(?![A-Za-z0-9])')
+    result = {b: set() for b in all_backends}
+    bit_dirs = sorted(d for d in os.listdir(project_root)
+                      if 'Bit' in d and os.path.isdir(os.path.join(project_root, d)))
+    for bit in bit_dirs:
+        bit_path = os.path.join(project_root, bit)
+        for sub in ("include", "src", "examples"):
+            walk_root = os.path.join(bit_path, sub)
+            if not os.path.isdir(walk_root):
+                continue
+            for root, _dirs, files in os.walk(walk_root):
+                for name in files:
+                    if not name.endswith(_SOURCE_EXTS):
+                        continue
+                    try:
+                        with io.open(os.path.join(root, name), "r",
+                                     encoding="utf-8", errors="replace") as f:
+                            text = f.read()
+                    except (IOError, OSError):
+                        continue
+                    for m in pattern.finditer(text):
+                        result[m.group(1)].add(bit)
+    return {b: sorted(s) for b, s in result.items()}
+
+
 def same(f1, f2):
     """Check whether or not two files differ in their contents except for the date line"""
     file1 = open(f1, "r")

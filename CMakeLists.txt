@@ -553,7 +553,9 @@ endif()
 add_custom_target(docs WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} COMMAND doxygen doc/doxygen.conf)
 
 # Work out which modules to include in the compile
+gambit_translate_bits_into_itch()
 retrieve_bits(GAMBIT_BITS ${PROJECT_SOURCE_DIR} "${itch}" "Loud")
+gambit_configure_optin_build()
 
 # Set up targets to make standalone tarballs of the different modules
 add_standalone_tarballs("${GAMBIT_BITS}" "${GAMBIT_VERSION_FULL}")
@@ -652,7 +654,7 @@ endif()
 
 # Generate the CMakeLists.txt files for GAMBIT modules, Backends, Models and Printers)
 message("${Yellow}-- Updating GAMBIT module, model, backend, and printer CMake files.${ColourReset}")
-set(update_cmakelists ${PROJECT_SOURCE_DIR}/cmake/scripts/update_cmakelists.py -x __not_a_real_name__,${itch_with_commas})
+set(update_cmakelists ${PROJECT_SOURCE_DIR}/cmake/scripts/update_cmakelists.py -x __not_a_real_name__,${itch_with_commas} ${update_cmakelists_extra_args})
 execute_process(RESULT_VARIABLE result COMMAND ${Python3_EXECUTABLE} ${update_cmakelists} WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 check_result(${result} ${update_cmakelists})
 message("${Yellow}-- Updating GAMBIT module, backend, and printer CMake files - done.${ColourReset}")
@@ -699,3 +701,17 @@ include(cmake/executables.cmake)
 if(EXISTS "${PROJECT_SOURCE_DIR}/ScannerBit/")
   include(${PROJECT_BINARY_DIR}/linkedout.cmake)
 endif()
+
+# Print the list of backend make targets that survived the ditch / opt-in pass.
+gambit_print_available_backend_targets()
+
+# Register a `make list-backends` target that prints a status table of every
+# known backend, including which Bits use it. The data file is rewritten on
+# each cmake configure to reflect the current set of active targets.
+file(WRITE "${PROJECT_BINARY_DIR}/list_backends_data.txt"
+     "TARGETS=${GAMBIT_AVAILABLE_BACKEND_TARGETS}\n")
+add_custom_target(list-backends
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/Backends/scripts/list_backends.py ${PROJECT_BINARY_DIR}/list_backends_data.txt
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+  USES_TERMINAL)
+add_dependencies(list-backends backend_harvest)
