@@ -159,7 +159,7 @@ macro(add_external_clean package dir dl target)
   set(reset_file "${CMAKE_BINARY_DIR}/BOSS_reset_info/reset_info.${safe_package}.boss")
   add_custom_target(clean-${package} COMMAND ${CMAKE_COMMAND} -E remove -f ${rmstring1}-BOSS ${rmstring1}-configure ${rmstring1}-build ${rmstring1}-install ${rmstring1}-done
                                      COMMAND [ -e ${dir} ] && cd ${dir} && ([ -e makefile ] || [ -e Makefile ] && (${target})) || true
-                                     COMMAND [ -e ${reset_file} ] && ${PYTHON_EXECUTABLE} ${BOSS_dir}/boss.py -r ${reset_file} || true)
+                                     COMMAND [ -e ${reset_file} ] && ${Python3_EXECUTABLE} ${BOSS_dir}/boss.py -r ${reset_file} || true)
   add_custom_target(nuke-${package} DEPENDS clean-${package}
                                     COMMAND ${CMAKE_COMMAND} -E remove -f ${rmstring1}-download ${rmstring1}-download-failed ${rmstring1}-mkdir ${rmstring1}-patch ${rmstring1}-update ${rmstring1}-gitclone-lastrun.txt ${dl} || true
                                     COMMAND ${CMAKE_COMMAND} -E remove_directory ${dir} || true
@@ -272,7 +272,7 @@ macro(add_gambit_custom target filename HARVESTER DEPS)
     set(ditch_string "-x __not_a_real_name__,${ARGN}")
   endif()
   add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/${filename}
-                     COMMAND ${PYTHON_EXECUTABLE} ${${HARVESTER}} ${ditch_string}
+                     COMMAND ${Python3_EXECUTABLE} ${${HARVESTER}} ${ditch_string}
                      COMMAND touch ${CMAKE_BINARY_DIR}/${filename}
                      WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                      DEPENDS ${${HARVESTER}}
@@ -371,7 +371,7 @@ function(add_gambit_executable executablename LIBRARIES)
     set(LIBRARIES ${LIBRARIES} ${Mathematica_WSTP_LIBRARIES})
   endif()
   if(pybind11_FOUND)
-    set(LIBRARIES ${LIBRARIES} ${PYTHON_LIBRARIES})
+    set(LIBRARIES ${LIBRARIES} ${Python3_LIBRARIES})
   endif()
   if(SQLite3_FOUND)
       set(LIBRARIES ${LIBRARIES} ${SQLite3_LIBRARIES})
@@ -451,7 +451,7 @@ function(add_standalone executablename)
 
     # Set up the target to call the facilitator script to make the functors source file for this standalone.
     add_custom_command(OUTPUT ${STANDALONE_FUNCTORS}
-                       COMMAND ${PYTHON_EXECUTABLE} ${STANDALONE_FACILITATOR} ${executablename} -m __not_a_real_name__,${COMMA_SEPARATED_MODULES}
+                       COMMAND ${Python3_EXECUTABLE} ${STANDALONE_FACILITATOR} ${executablename} -m __not_a_real_name__,${COMMA_SEPARATED_MODULES}
                        COMMAND touch ${STANDALONE_FUNCTORS}
                        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
                        DEPENDS modules_harvested
@@ -727,7 +727,7 @@ macro(BOSS_backend_full name backend_version ${ARGN})
     add_dependencies(${name}_${ver} castxml)
     ExternalProject_Add_Step(${name}_${ver} BOSS
       # Run BOSS
-      COMMAND ${PYTHON_EXECUTABLE} ${BOSS_dir}/boss.py --no-instructions ${BOSS_castxml_cc} ${BOSS_command_line_options} ${BOSS_includes_Boost} ${BOSS_includes_Eigen3} ${BOSS_includes_GSL} ${name}_${backend_version_safe}
+      COMMAND ${Python3_EXECUTABLE} ${BOSS_dir}/boss.py --no-instructions ${BOSS_castxml_cc} ${BOSS_command_line_options} ${BOSS_includes_Boost} ${BOSS_includes_Eigen3} ${BOSS_includes_GSL} ${name}_${backend_version_safe}
       # Copy BOSS-generated files to correct folders within Backends/include
       COMMAND ${CMAKE_COMMAND} -E remove_directory ${PROJECT_SOURCE_DIR}/Backends/include/gambit/Backends/backend_types/${name_in_frontend}_${backend_version_safe} || true
       COMMAND cp -r BOSS_output/${name_in_frontend}_${backend_version_safe}/for_gambit/backend_types/${name_in_frontend}_${backend_version_safe} ${PROJECT_SOURCE_DIR}/Backends/include/gambit/Backends/backend_types/
