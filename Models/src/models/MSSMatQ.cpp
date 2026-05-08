@@ -54,6 +54,7 @@
 #include "gambit/Models/model_helpers.hpp"
 #include "gambit/Logs/logger.hpp"
 #include "gambit/Utils/numerical_constants.hpp"
+#include "gambit/Utils/variadic_functions.hpp"
 #include "gambit/Elements/sminputs.hpp"
 
 #include "gambit/Models/models/MSSMatQ.hpp"

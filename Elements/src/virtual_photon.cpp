@@ -23,6 +23,7 @@
 
 #include "gambit/Elements/virtual_photon.hpp"
 #include "gambit/Utils/ascii_table_reader.hpp"
+#include "gambit/Utils/variadic_functions.hpp"
 #include "gambit/cmake/cmake_variables.hpp"
 
 namespace Gambit
