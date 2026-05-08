@@ -20,7 +20,7 @@
 #
 #  **************************************
 
-cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16.3 FATAL_ERROR)
 project(GUM)
 message("   Building GUM in ${CMAKE_CURRENT_SOURCE_DIR}")
 include(ExternalProject)
@@ -40,13 +40,6 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   set(dashi "-i ''")
 else()
   set(dashi "-i")
-endif()
-
-# Set a consistent MACOSX_RPATH default across all CMake versions.
-# When CMake 2.8.12 is required, change this default to 1.
-# When CMake 3.0.0 is required, remove this block (see CMP0042).
-if(NOT DEFINED CMAKE_MACOSX_RPATH)
-  set(CMAKE_MACOSX_RPATH 0)
 endif()
 
 # Check for Mathematica
@@ -75,8 +68,6 @@ endif()
 include(cmake/contrib.cmake)
 
 # Check for Python interpreter
-# Also, we need to add versions of python greater than 3.3 manually,
-# for compatibility with CMake 2.8.12.
 set(Python_ADDITIONAL_VERSIONS 3.4 3.5 3.6 3.7 3.8 3.9 3.10 3.11)
 find_package(PythonInterp 3)  # We require Python 3.
 if(PYTHONINTERP_FOUND) 

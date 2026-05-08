@@ -43,7 +43,7 @@ if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 4)
 endif()
 
 # Define minimum cmake version
-cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16.3 FATAL_ERROR)
 
 
 # Define minimum compiler versions
@@ -60,26 +60,6 @@ elseif(CMAKE_BUILD_TYPE STREQUAL "Release_O3")
   SET(FORCE_O3 TRUE)
 endif()
 message("-- Build type is set to ${CMAKE_BUILD_TYPE}")
-
-# Set certain policies to NEW
-foreach(p
-  CMP0003 # CMake 2.6.0
-  CMP0012 # CMake 2.8.0
-  CMP0022 # CMake 2.8.12
-  CMP0025 # CMake 3.0
-  CMP0042 # CMake 3.0
-  CMP0048 # CMake 3.0
-  CMP0051 # CMake 3.1
-  CMP0054 # CMake 3.1
-  CMP0060 # CMake 3.16.2
-  CMP0063 # CMake 3.3.2
-  CMP0068 # CMake 3.9.1
-  CMP0074 # CMake 3.12
-  )
-  if(POLICY ${p})
-    cmake_policy(SET ${p} NEW)
-  endif()
-endforeach()
 
 # Set the project name, enabling C, C++ and Fortran support
 project(gambit C CXX Fortran)
@@ -126,8 +106,7 @@ string(REGEX MATCH ";pybind;|;pybind11;|;Pybind;|;Pybind11;" DITCH_PYBIND ";${it
 
 # Check for Python interpreter.
 # We also need to search for PythonLibs before letting pybind11 look for them,
-# otherwise it seems to get it wrong.  Also, we need to add versions of python
-# greater than 3.3 manually, for compatibility with CMake 2.8.12.
+# otherwise it seems to get it wrong.
 # If pybind11 is ditched, do not worry about PythonLibs
 set(Python_ADDITIONAL_VERSIONS 3.4 3.5 3.6 3.7 3.8 3.9 3.10 3.11 3.12 3.13)
 find_package(PythonInterp 3)  # We require Python 3.
@@ -356,11 +335,7 @@ endif()
 
 # Fix Boost < 1.55 for Clang
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
-  if(${CMAKE_VERSION} VERSION_LESS 3.12.0)
-    add_definitions(-DBOOST_PP_VARIADICS=1)
-  else()
-    add_compile_definitions(BOOST_PP_VARIADICS=1)
-  endif()
+  add_compile_definitions(BOOST_PP_VARIADICS=1)
 endif()
 
 # Check for Eigen
@@ -527,22 +502,14 @@ option(SUPPRESS_LIBRARY_WARNINGS "Suppress common compiler warnings due to exter
 string(FIND ${CMAKE_CXX_FLAGS} "-rdynamic" FOUND_RDYNAMIC_CXX)
 string(FIND ${CMAKE_CXX_FLAGS} "--export-dynamic" FOUND_EXPORT_DYNAMIC_CXX)
 if(${FOUND_RDYNAMIC_CXX} EQUAL -1 AND ${FOUND_EXPORT_DYNAMIC_CXX} EQUAL -1)
-  if(${CMAKE_MAJOR_VERSION} MATCHES "2")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden -fvisibility-inlines-hidden")
-  else()
-    set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-    set(CMAKE_VISIBILITY_INLINES_HIDDEN TRUE)
-  endif()
+  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+  set(CMAKE_VISIBILITY_INLINES_HIDDEN TRUE)
 endif()
 
 string(FIND ${CMAKE_Fortran_FLAGS} "-rdynamic" FOUND_RDYNAMIC_FORTRAN)
 string(FIND ${CMAKE_Fortran_FLAGS} "--export-dynamic" FOUND_EXPORT_DYNAMIC_FORTRAN)
 if(${FOUND_RDYNAMIC_FORTRAN} EQUAL -1 AND ${FOUND_EXPORT_DYNAMIC_FORTRAN} EQUAL -1)
-  if(${CMAKE_MAJOR_VERSION} MATCHES "2")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fvisibility=hidden")
-  else()
-    set(CMAKE_Fortran_VISIBILITY_PRESET hidden)
-  endif()
+  set(CMAKE_Fortran_VISIBILITY_PRESET hidden)
 endif()
 
 # Forbid the use of variable-length array and other non-standard C++ syntax
