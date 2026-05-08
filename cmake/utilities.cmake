@@ -308,7 +308,15 @@ function(add_gambit_executable executablename LIBRARIES)
   cmake_parse_arguments(ARG "" "" "SOURCES;HEADERS;" ${ARGN})
 
   add_executable(${executablename} ${ARG_SOURCES} ${ARG_HEADERS})
-  set_target_properties(${executablename} PROPERTIES EXCLUDE_FROM_ALL 1)
+  # ENABLE_EXPORTS adds -rdynamic/-export_dynamic to the linker so that dlopen'd backends
+  # and scanner plugins can resolve symbols from statically linked contrib libraries (e.g.
+  # yaml-cpp exception typeinfo). Setting this via a target property rather than
+  # CMAKE_CXX_FLAGS keeps GAMBIT's own code compiled with -fvisibility=hidden, so only
+  # contrib symbols built with default visibility are exported, not GAMBIT internals.
+  set_target_properties(${executablename} PROPERTIES
+    EXCLUDE_FROM_ALL 1
+    ENABLE_EXPORTS TRUE
+  )
 
   if(${CMAKE_VERSION} VERSION_GREATER 2.8.10)
     foreach (dir ${GAMBIT_INCDIRS})

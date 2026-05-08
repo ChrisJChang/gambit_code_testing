@@ -37,8 +37,14 @@
 #
 #************************************************
 
+# Set CMAKE_POLICY_VERSION_MINIMUM to 3.5 if CMAKE version >= 4
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL 4)
+  set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+endif()
+
 # Define minimum cmake version
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+
 
 # Define minimum compiler versions
 set(MIN_GCC_VERSION 9.1)
@@ -400,11 +406,6 @@ if (OPENMP_FOUND OR FOUND_BREW_OPENMP)
     set(OpenMP_Fortran_FLAGS "-fopenmp")
   endif()
   set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_Fortran_FLAGS}")
-  # If the OpenMP headers live in a special location due to
-  # being installed with brew, we need to tell Eigen3 about it.
-  #if (FOUND_BREW_OPENMP)
-  #  set(EIGEN3_INCLUDE_DIR "${EIGEN3_INCLUDE_DIR} -I${BREW_LIBOMP_PREFIX}/include")
-  #endif()
 else()
   if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
     if(NOT FOUND_BREW_OPENMP)
