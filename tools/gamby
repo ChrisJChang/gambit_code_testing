@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+"""
+gamby - GAMBIT build wrapper with visual status overlay.
+
+Usage:
+    gamby make [MAKE_ARGS...]
+
+'gamby make' behaves identically to 'make', but also shows a transparent
+image overlay on screen:
+  • Green square (happy.png) while the build is running.
+  • Red square   (sad.png)   if a build error is detected.
+
+Images live in tools/gamby_images/ next to this script and can be replaced
+with any PNG you like (the filenames must stay happy.png / sad.png).
+
+Environment variables:
+  GAMBY_IMAGES_DIR        Override the image directory.
+  GAMBY_OVERLAY_POSITION  Window corner: bottom-right (default), bottom-left,
+                          top-right, top-left.
+
+Setup (add gamby to your PATH):
+    export PATH="$PATH:/path/to/gambit/tools"
+"""
+
+import os
+import sys
+import subprocess
+import tempfile
+import threading
+import signal
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Paths
+# ---------------------------------------------------------------------------
+SCRIPT_DIR   = Path(__file__).resolve().parent
+OVERLAY_PY   = SCRIPT_DIR / "gamby_overlay.py"
+_default_img = SCRIPT_DIR / "gamby_images"
+IMAGES_DIR   = Path(os.environ.get("GAMBY_IMAGES_DIR", str(_default_img)))
+
+
+# ---------------------------------------------------------------------------
+# Error-line heuristics
+# ---------------------------------------------------------------------------
+_ERROR_SUBSTRINGS = (
+    ": error:",          # GCC/Clang compiler errors
+    ": fatal error:",    # GCC/Clang fatal errors
+    ": undefined reference",  # linker errors
+)
+_MAKE_ERROR_MARKER = ("make[", "*** [")  # make error propagation lines
+
+
+def _is_error_line(line: str) -> bool:
+    lo = line.lower()
+    for pat in _ERROR_SUBSTRINGS:
+        if pat in lo:
+            return True
+    # "make[N]: *** [target] Error N"
+    if _MAKE_ERROR_MARKER[0] in line and _MAKE_ERROR_MARKER[1] in line:
+        return True
+    # CMake / ninja
+    if line.startswith("CMake Error") or line.startswith("FAILED:"):
+        return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# State file helpers
+# ---------------------------------------------------------------------------
+def _write_state(path: str, state: str) -> None:
+    try:
+        with open(path, "w") as fh:
+            fh.write(state)
+    except OSError:
+        pass
+
+
+# ---------------------------------------------------------------------------
+# Overlay process
+# ---------------------------------------------------------------------------
+def _start_overlay(state_file: str):
+    happy = IMAGES_DIR / "happy.png"
+    sad   = IMAGES_DIR / "sad.png"
+    if not (happy.exists() and sad.exists()):
+        return None
+
+    has_display = bool(
+        os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")
+    )
+    if not has_display:
+        return None
+
+    try:
+        proc = subprocess.Popen(
+            [sys.executable, str(OVERLAY_PY), str(happy), str(sad), state_file],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return proc
+    except Exception:
+        return None
+
+
+def _stop_overlay(proc, state_file: str) -> None:
+    if proc is None:
+        return
+    _write_state(state_file, "done")
+    try:
+        proc.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        proc.terminate()
+
+
+# ---------------------------------------------------------------------------
+# Build runner
+# ---------------------------------------------------------------------------
+def _run_make(args: list, state_file: str) -> int:
+    cmd = ["make"] + args
+    error_signalled = False
+
+    def _on_error():
+        nonlocal error_signalled
+        if not error_signalled:
+            error_signalled = True
+            _write_state(state_file, "sad")
+
+    def _stream(pipe, dest):
+        for raw in pipe:
+            dest.buffer.write(raw if isinstance(raw, bytes) else raw.encode())
+            dest.buffer.flush()
+            text = raw if isinstance(raw, str) else raw.decode("utf-8", errors="replace")
+            if _is_error_line(text):
+                _on_error()
+
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+        )
+    except FileNotFoundError:
+        print("gamby: 'make' not found in PATH", file=sys.stderr)
+        return 127
+
+    t_out = threading.Thread(target=_stream, args=(proc.stdout, sys.stdout), daemon=True)
+    t_err = threading.Thread(target=_stream, args=(proc.stderr, sys.stderr), daemon=True)
+    t_out.start()
+    t_err.start()
+
+    try:
+        proc.wait()
+    except KeyboardInterrupt:
+        proc.send_signal(signal.SIGINT)
+        proc.wait()
+
+    t_out.join()
+    t_err.join()
+
+    if proc.returncode != 0:
+        _on_error()
+
+    return proc.returncode
+
+
+# ---------------------------------------------------------------------------
+# Subcommand: make
+# ---------------------------------------------------------------------------
+def cmd_make(args: list) -> int:
+    state_file = os.path.join(
+        tempfile.gettempdir(), f"gamby_state_{os.getpid()}.txt"
+    )
+    _write_state(state_file, "happy")
+
+    overlay = _start_overlay(state_file)
+    try:
+        rc = _run_make(args, state_file)
+    finally:
+        _stop_overlay(overlay, state_file)
+        try:
+            os.unlink(state_file)
+        except OSError:
+            pass
+
+    return rc
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+def main() -> None:
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        print(__doc__)
+        sys.exit(0)
+
+    command = sys.argv[1]
+    rest    = sys.argv[2:]
+
+    if command == "make":
+        sys.exit(cmd_make(rest))
+    else:
+        print(f"gamby: unknown command '{command}'", file=sys.stderr)
+        print("Available commands: make", file=sys.stderr)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
