@@ -41,6 +41,8 @@
 #include <boost/graph/topological_sort.hpp>
 #ifdef HAVE_GRAPHVIZ
   #include <boost/graph/graphviz.hpp>
+#include <set>
+#include <fstream>
 #endif
 
 namespace Gambit

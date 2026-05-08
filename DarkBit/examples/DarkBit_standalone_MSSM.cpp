@@ -41,6 +41,7 @@
 #include "gambit/Elements/mssm_slhahelp.hpp"
 #include "gambit/Models/SimpleSpectra/MSSMSimpleSpec.hpp"
 #include "gambit/Utils/util_functions.hpp"
+#include <fstream>
 
 using namespace DarkBit::Functown;     // Functors wrapping the module's actual module functions
 using namespace BackendIniBit::Functown;    // Functors wrapping the backend initialisation functions

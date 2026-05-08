@@ -26,6 +26,7 @@
 
 #include <math.h>
 #include <boost/lexical_cast.hpp>
+#include <set>
 
 using namespace SLHAea;
 

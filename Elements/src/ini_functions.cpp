@@ -36,6 +36,7 @@
 #include "gambit/Backends/backend_singleton.hpp"
 #include "gambit/Models/claw_singleton.hpp"
 #include "gambit/Logs/logging.hpp"
+#include <set>
 
 namespace Gambit
 {

@@ -49,6 +49,7 @@
 
 // Boost
 #include <boost/algorithm/string/replace.hpp>
+#include <set>
 
 // MPI
 #ifdef WITH_MPI

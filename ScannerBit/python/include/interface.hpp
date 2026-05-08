@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <vector>
 #include <yaml-cpp/yaml.h>
+#include <unordered_map>
 
 #include "gambit/Printers/printermanager.hpp"
 #include "gambit/Utils/yaml_parser_base.hpp"

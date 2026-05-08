@@ -16,6 +16,7 @@
 ///  *********************************************
 
 #include "gambit/DecayBit/decay_utils.hpp"
+#include <set>
 
 namespace Gambit
 {

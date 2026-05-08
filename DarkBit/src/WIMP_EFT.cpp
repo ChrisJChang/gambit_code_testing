@@ -37,6 +37,7 @@
 ///  *********************************************
 
 #include <boost/make_shared.hpp>
+#include <set>
 
 #include "gambit/Elements/gambit_module_headers.hpp"
 #include "gambit/DarkBit/DarkBit_rollcall.hpp"

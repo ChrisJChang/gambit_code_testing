@@ -28,6 +28,7 @@
 #include <limits>
 #include <chrono>
 #include <omp.h>
+#include <deque>
 
 // Gambit
 #include "gambit/Logs/logmaster.hpp"

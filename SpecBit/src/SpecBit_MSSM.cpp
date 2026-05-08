@@ -34,6 +34,7 @@
 #include <sstream>
 #include <cmath>
 #include <complex>
+#include <fstream>
 
 #include "gambit/Elements/gambit_module_headers.hpp"
 #include "gambit/Elements/spectrum_factories.hpp"

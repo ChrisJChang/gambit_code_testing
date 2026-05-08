@@ -33,6 +33,7 @@
 ///  *********************************************
 
 #include <algorithm>
+#include <set>
 #include "gambit/Elements/functors.hpp"
 #include "gambit/Models/models.hpp"
 

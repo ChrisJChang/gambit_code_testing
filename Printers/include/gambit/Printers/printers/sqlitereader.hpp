@@ -24,6 +24,7 @@
 #include "gambit/Printers/printers/sqlitetypes.hpp"
 
 #include <boost/preprocessor/seq/for_each_i.hpp>
+#include <set>
 
 #ifndef __sqlite_reader_hpp__
 #define __sqlite_reader_hpp__

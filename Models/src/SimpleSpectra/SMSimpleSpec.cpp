@@ -20,6 +20,7 @@
 #include <boost/preprocessor/tuple/to_seq.hpp>
 #include <boost/preprocessor/seq/elem.hpp>
 #include <boost/preprocessor/seq/for_each_product.hpp>
+#include <set>
 
 /// Macro to help assign the same function pointers to multiple string keys
 // Relies on "tmp_map" being used as the variable name for the temporary maps

@@ -23,6 +23,7 @@
 #include "gambit/Utils/yaml_options.hpp"
 
 #include <vector>
+#include <unordered_map>
   
 namespace Gambit
 {

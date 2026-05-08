@@ -41,6 +41,7 @@
 
 #include "gambit/Core/container_factory.hpp"
 #include "gambit/Printers/baseprinter.hpp"
+#include <unordered_map>
 
 namespace Gambit
 {

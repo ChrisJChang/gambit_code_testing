@@ -27,6 +27,7 @@
 #include "gambit/Utils/file_lock.hpp"
 
 #include <unistd.h>
+#include <list>
 
 BE_INI_FUNCTION
 {

@@ -1,4 +1,6 @@
 #include <csignal>
+#include <set>
+#include <unordered_map>
 
 #include "gambit/Logs/logger.hpp"
 #include "gambit/Logs/logmaster.hpp"

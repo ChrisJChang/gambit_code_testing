@@ -27,6 +27,7 @@
 
 #include <map>
 #include <vector>
+#include <set>
 
 #include "gambit/Backends/backend_info.hpp"
 #include "gambit/Core/yaml_description_database.hpp"

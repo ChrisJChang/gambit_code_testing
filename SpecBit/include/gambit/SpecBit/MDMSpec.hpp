@@ -19,6 +19,7 @@
 #define MDMSPEC_H
 
 #include <memory>
+#include <set>
 
 #include "gambit/cmake/cmake_variables.hpp"
 #include "gambit/Elements/subspectrum.hpp"

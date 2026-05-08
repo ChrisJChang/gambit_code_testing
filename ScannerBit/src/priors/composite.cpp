@@ -24,6 +24,7 @@
 #include <set>
 #include <map>
 #include <algorithm>
+#include <unordered_map>
 
 #include "gambit/Utils/yaml_options.hpp"
 #include "gambit/ScannerBit/priors_rollcall.hpp"

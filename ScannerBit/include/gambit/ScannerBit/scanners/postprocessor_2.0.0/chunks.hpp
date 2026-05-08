@@ -16,6 +16,8 @@
 
 #ifndef __postprocessor_chunks_hpp__
 #define __postprocessor_chunks_hpp__
+#include <set>
+#include <unordered_set>
 
 /// Struct to describe start and end indices for a chunk of data
 struct Chunk

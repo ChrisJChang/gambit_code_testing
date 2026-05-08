@@ -50,6 +50,8 @@
 #include "SLHAea/slhaea.h"
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_min.h>
+#include <set>
+#include <fstream>
 #ifdef WITH_MPI
   #include "mpi.h"
 #endif

@@ -20,6 +20,8 @@
 #include "gambit/Printers/printers/asciireader.hpp"
 #include "gambit/Utils/util_functions.hpp"
 #include "gambit/Logs/logger.hpp"
+#include <set>
+#include <fstream>
 
 namespace Gambit {
   namespace Printers {

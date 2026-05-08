@@ -18,6 +18,7 @@
 #define DUMMY_PRIOR_HPP
 
 #include <algorithm>
+#include <unordered_map>
 
 #include "gambit/ScannerBit/priors.hpp"
 

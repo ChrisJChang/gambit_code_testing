@@ -27,6 +27,7 @@
 #define __AlterBBN_types_hpp__
 
 #include "gambit/Utils/util_types.hpp"
+#include <set>
 
 #define NNUCREAC 100
 #define NTABMAX 1000

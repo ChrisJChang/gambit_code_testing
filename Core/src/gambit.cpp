@@ -14,6 +14,7 @@
 ///  *********************************************
 
 #include <csignal>
+#include <set>
 
 #include "gambit/Core/gambit.hpp"
 #include "gambit/Utils/mpiwrapper.hpp"

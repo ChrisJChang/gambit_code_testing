@@ -17,6 +17,8 @@
 
 #include "gambit/ScannerBit/scanner_plugin.hpp"
 #include "gambit/ScannerBit/scanners/postprocessor_2.0.0/chunks.hpp"
+#include <set>
+#include <unordered_map>
 
 #ifndef __postprocessor_2_0_0_hpp__
 #define __postprocessor_2_0_0_hpp__

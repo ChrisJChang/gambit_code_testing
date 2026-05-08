@@ -20,6 +20,7 @@
 #include "gambit/Utils/boost_fallbacks.hpp"
 #include "gambit/Printers/printers/sqlitereader.hpp"
 #include "gambit/Utils/util_functions.hpp"
+#include <set>
 
 // Activate extra debug output on errors
 #define SQL_DEBUG

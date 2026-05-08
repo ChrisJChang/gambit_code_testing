@@ -24,6 +24,8 @@
 
 // Need this to allow Master process to manually check for shutdown signals without calling the likelihood container
 #include "gambit/Utils/signal_handling.hpp"
+#include <set>
+#include <unordered_map>
 
 using Gambit::Printers::PPIDpair;
 

@@ -14,6 +14,7 @@
 
 
 #include "gambit/ColliderBit/limits/ImageLimit.hpp"
+#include <fstream>
 
 
 

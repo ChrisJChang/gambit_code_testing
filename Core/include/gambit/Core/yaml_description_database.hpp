@@ -25,6 +25,7 @@
 #include <vector>
 #include <sstream>
 #include <utility>
+#include <set>
 
 #include "gambit/Utils/util_types.hpp"
 #include "gambit/Utils/standalone_error_handlers.hpp"

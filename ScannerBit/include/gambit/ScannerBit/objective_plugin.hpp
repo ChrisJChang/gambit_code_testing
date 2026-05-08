@@ -26,6 +26,7 @@
 #include "gambit/ScannerBit/scanner_utils.hpp"
 #include "gambit/ScannerBit/plugin_defs.hpp"
 #include "gambit/ScannerBit/plugin_macros.hpp"
+#include <unordered_map>
 
 ///\name Objective Plugin Macros
 ///Macros used by the objective plugins.

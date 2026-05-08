@@ -15,6 +15,7 @@
 ///  *********************************************
 
 #include "gambit/Utils/ascii_table_reader.hpp"
+#include <fstream>
 
 namespace Gambit
 {

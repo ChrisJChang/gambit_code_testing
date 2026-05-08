@@ -55,6 +55,7 @@
 #include "Eigen/Eigenvalues"
 
 #include <gsl/gsl_sf_gamma.h>
+#include <cassert>
 
 // #define COLLIDERBIT_DEBUG
 #define DEBUG_PREFIX "DEBUG: OMP thread " << omp_get_thread_num() << ":  "

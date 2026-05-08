@@ -1,4 +1,5 @@
 #include "gambit/ColliderBit/limits/OPALDegenerateCharginoLimits.hpp"
+#include <fstream>
 
 namespace Gambit
 {

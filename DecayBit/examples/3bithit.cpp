@@ -23,6 +23,7 @@
 ///  *********************************************
 
 #include <stdexcept>
+#include <fstream>
 
 #include "gambit/Elements/standalone_module.hpp"
 #include "gambit/Utils/file_lock.hpp"

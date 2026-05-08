@@ -47,6 +47,7 @@
 #include <gsl/gsl_interp2d.h>
 #include <gsl/gsl_spline2d.h>
 #include <gsl/gsl_sf_gamma.h>
+#include <cassert>
 
 #include "Eigen/Eigenvalues"
 #include "Eigen/Eigen"

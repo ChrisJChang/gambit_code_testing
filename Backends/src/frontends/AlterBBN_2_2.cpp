@@ -33,6 +33,7 @@
 ///  *********************************************
 
 #include <sstream>
+#include <set>
 #include "gambit/Backends/frontend_macros.hpp"
 #include "gambit/Backends/frontends/AlterBBN_2_2.hpp"
 

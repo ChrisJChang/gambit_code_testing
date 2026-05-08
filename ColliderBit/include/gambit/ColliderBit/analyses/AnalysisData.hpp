@@ -39,6 +39,7 @@
 #include <memory>
 #include <iomanip>
 #include <algorithm>
+#include <cassert>
 #include "gambit/ColliderBit/analyses/SignalRegionData.hpp"
 
 namespace Gambit

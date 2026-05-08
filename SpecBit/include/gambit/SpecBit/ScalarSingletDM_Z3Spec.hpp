@@ -31,6 +31,7 @@
 #define __ScalarSingletDM_Z3SPEC_H__
 
 #include <memory>
+#include <set>
 
 #include "gambit/cmake/cmake_variables.hpp"
 #include "gambit/Elements/subspectrum.hpp"

@@ -37,6 +37,8 @@
 #include <iomanip>  // For debugging only
 #include <algorithm>
 #include <numeric>
+#include <set>
+#include <unordered_map>
 
 #include "gambit/ScannerBit/scanner_plugin.hpp"
 #include "gambit/ScannerBit/scanners/polychord/1.18.2/polychord.hpp"

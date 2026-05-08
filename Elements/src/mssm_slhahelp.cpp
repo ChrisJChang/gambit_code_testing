@@ -24,6 +24,7 @@
 #include "gambit/Elements/mssm_slhahelp.hpp"
 #include "gambit/Elements/ini_functions.hpp"
 #include "gambit/Utils/util_functions.hpp"
+#include <set>
 
 namespace Gambit
 {

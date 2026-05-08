@@ -69,6 +69,10 @@
 #include <map>
 #include <complex>
 #include <functional>
+#include <set>
+#include <list>
+#include <array>
+#include <fstream>
 
 #define pow2(a) ((a)*(a))          // Get speedy
 #define pow3(a) ((a)*(a)*(a))

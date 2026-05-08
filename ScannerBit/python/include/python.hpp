@@ -5,6 +5,7 @@
 #include "gambit/ScannerBit/factory_defs.hpp"
 #include "gambit/ScannerBit/base_prior.hpp"
 #include <yaml-cpp/yaml.h>
+#include <unordered_map>
 #include "interface.hpp"
 
 namespace Gambit

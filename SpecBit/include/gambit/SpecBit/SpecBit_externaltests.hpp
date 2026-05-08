@@ -31,6 +31,8 @@
 #include "flexiblesusy/src/ew_input.hpp"
 #include "flexiblesusy/src/numerics2.hpp"
 #include "flexiblesusy/src/wrappers.hpp"
+#include <set>
+#include <fstream>
 
 // Switch test output depending on where this is being compiled
 #ifdef IN_SPECBIT

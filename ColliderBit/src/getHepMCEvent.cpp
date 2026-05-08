@@ -47,6 +47,7 @@
 #include "HepMC3/GenEvent.h"
 #include "HepMC3/GenParticle.h"
 #include "HepMC3/ReaderAscii.h"
+#include <fstream>
 
 #define DEBUG_PREFIX "DEBUG: OMP thread " << omp_get_thread_num() << ":  "
 //#define COLLIDERBIT_DEBUG

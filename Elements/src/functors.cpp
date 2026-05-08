@@ -54,6 +54,7 @@
 
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/io/ios_state.hpp>
+#include <set>
 
 namespace Gambit
 {

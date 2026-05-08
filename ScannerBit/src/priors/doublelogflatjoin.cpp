@@ -23,6 +23,7 @@
 #include "gambit/ScannerBit/priors/doublelogflatjoin.hpp"
 
 #include <cmath>
+#include <unordered_map>
 
 namespace Gambit
 {

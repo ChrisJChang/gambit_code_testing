@@ -19,6 +19,7 @@
 ///  *********************************************
 
 #include <chrono>
+#include <fstream>
 
 #include "gambit/Elements/gambit_module_headers.hpp"
 #include "gambit/Printers/printer_utils.hpp"

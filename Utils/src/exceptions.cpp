@@ -21,6 +21,7 @@
 #include <iostream>
 #include <algorithm>
 #include <omp.h>
+#include <set>
 
 #include "gambit/Utils/mpiwrapper.hpp"
 #include "gambit/Utils/util_macros.hpp"

@@ -41,6 +41,7 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_odeiv2.h>
+#include <fstream>
 
 #include "gambit/Elements/gambit_module_headers.hpp"
 #include "gambit/Utils/util_functions.hpp"

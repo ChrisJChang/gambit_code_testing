@@ -40,6 +40,7 @@
 
 // Boost
 #include <boost/preprocessor/seq/for_each.hpp>
+#include <set>
 
 // Gambit
 #include "gambit/ScannerBit/printable_types.hpp"

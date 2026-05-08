@@ -29,6 +29,7 @@
 #define __ini_functions_hpp__
 
 #include <vector>
+#include <set>
 
 #include "gambit/Utils/util_types.hpp"
 

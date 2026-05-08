@@ -35,6 +35,7 @@
 
 // BOOST_PP
 #include <boost/preprocessor/seq/for_each_i.hpp>
+#include <fstream>
 
 // Code!
 namespace Gambit

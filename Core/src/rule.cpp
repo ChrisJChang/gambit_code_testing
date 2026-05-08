@@ -18,6 +18,7 @@
 #include "gambit/Core/error_handlers.hpp"
 #include "gambit/Core/resolution_utilities.hpp"
 #include "gambit/Elements/functors.hpp"
+#include <set>
 
 namespace Gambit
 {

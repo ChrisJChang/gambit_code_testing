@@ -19,6 +19,7 @@
 
 #include "gambit/ScannerBit/priors.hpp"
 #include "gambit/ScannerBit/plugin_interface.hpp"
+#include <unordered_map>
 
 namespace Gambit
 {

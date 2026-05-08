@@ -23,6 +23,8 @@
 ///  *********************************************
 
 #include <iostream>
+#include <set>
+#include <fstream>
 
 #include "gambit/Utils/yaml_parser_base.hpp"
 #include "gambit/Utils/util_functions.hpp"

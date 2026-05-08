@@ -20,6 +20,9 @@
 #include "gambit/Utils/new_mpi_datatypes.hpp"
 #include "gambit/Utils/model_parameters.hpp"
 #include "gambit/Utils/util_functions.hpp"
+#include <set>
+#include <unordered_map>
+#include <fstream>
 
 using Gambit::Printers::PPIDpair;
 

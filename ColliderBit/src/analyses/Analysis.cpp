@@ -25,6 +25,7 @@
 ///  *********************************************
 
 #include <vector>
+#include <cassert>
 #include "HEPUtils/Event.h"
 #include "gambit/ColliderBit/analyses/Analysis.hpp"
 

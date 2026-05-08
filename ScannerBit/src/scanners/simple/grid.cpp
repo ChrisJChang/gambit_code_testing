@@ -25,6 +25,7 @@
 #include <cmath>
 #include <iostream>
 #include <sstream>
+#include <unordered_set>
 
 #include "gambit/ScannerBit/scanner_plugin.hpp"
 

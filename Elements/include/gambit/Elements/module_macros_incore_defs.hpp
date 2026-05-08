@@ -82,6 +82,7 @@
 #include <boost/preprocessor/tuple/to_seq.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 #include <boost/preprocessor/seq/cat.hpp>
+#include <set>
 
 
 /// \name Tag-registration macros

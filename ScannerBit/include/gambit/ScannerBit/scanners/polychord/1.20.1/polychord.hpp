@@ -32,6 +32,7 @@
 #define __polychord_hpp__
 
 #include "gambit/ScannerBit/scanner_plugin.hpp"
+#include <unordered_map>
 
 // Auxilliary classes and functions needed by polychord
 

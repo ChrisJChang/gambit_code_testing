@@ -23,6 +23,7 @@
 #define PRIOR_DEFS_HPP
 
 #include <cmath>
+#include <unordered_map>
 #include "gambit/ScannerBit/priors.hpp"
 
    /// Registry of priors

@@ -20,6 +20,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 
 #include "gambit/Utils/util_types.hpp"
 #include "gambit/cmake/cmake_variables.hpp"

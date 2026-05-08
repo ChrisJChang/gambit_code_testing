@@ -25,6 +25,8 @@
 
 #include "gambit/Core/likelihood_container.hpp"
 #include "gambit/Elements/type_equivalency.hpp"
+#include <set>
+#include <unordered_set>
 
 namespace Gambit
 {

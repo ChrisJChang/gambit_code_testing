@@ -1,4 +1,5 @@
 //   GAMBIT: Global and Modular BSM Inference Tool
+#include <unordered_map>
 //   *********************************************
 ///  \file
 ///

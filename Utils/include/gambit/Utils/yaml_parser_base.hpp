@@ -40,6 +40,7 @@
 
 #include "yaml-cpp/yaml.h"
 #include <limits>
+#include <set>
 
 
 namespace Gambit

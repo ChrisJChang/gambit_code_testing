@@ -20,6 +20,7 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
+#include <unordered_map>
 
 #include "gambit/ScannerBit/objective_plugin.hpp"
 #include "gambit/ScannerBit/cholesky.hpp"

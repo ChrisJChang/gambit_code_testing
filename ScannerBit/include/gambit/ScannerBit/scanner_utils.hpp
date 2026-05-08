@@ -38,6 +38,7 @@
   #include <cstdlib>
   #include <memory.h>
   #include <cxxabi.h>
+#include <fstream>
 #endif
 
 #include "gambit/Utils/exceptions.hpp"

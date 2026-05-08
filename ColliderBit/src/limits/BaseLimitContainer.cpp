@@ -19,6 +19,7 @@
 ///  *************************************
 
 #include "gambit/ColliderBit/limits/BaseLimitContainer.hpp"
+#include <fstream>
 
 namespace Gambit
 {

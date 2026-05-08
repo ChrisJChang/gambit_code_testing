@@ -35,6 +35,7 @@
 
 #ifdef WITH_MPI
   #include <chrono>
+#include <unordered_map>
   #include "gambit/Utils/mpiwrapper.hpp"
 #endif
 

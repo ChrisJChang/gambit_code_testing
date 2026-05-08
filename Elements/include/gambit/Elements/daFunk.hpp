@@ -96,6 +96,7 @@ daFunk::FunkPlain* C::ptr = NULL;
 // Extensions
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_errno.h>
+#include <cassert>
 
 namespace daFunk
 {

@@ -37,6 +37,7 @@
 
 #include <memory>
 #include <string>
+#include <set>
 
 namespace Gambit
 {

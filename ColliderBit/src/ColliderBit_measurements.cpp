@@ -35,6 +35,7 @@
   #include "YODA/AnalysisObject.h"
   #include "YODA/IO.h"
   #include "gambit/Utils/end_ignore_warnings.hpp"
+#include <fstream>
 #endif
 
 namespace Gambit

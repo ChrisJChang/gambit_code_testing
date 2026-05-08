@@ -22,6 +22,7 @@
 #include "gambit/Backends/frontend_macros.hpp"
 #include "gambit/Backends/frontends/plc_3_0.hpp"
 #include "gambit/Utils/util_functions.hpp"
+#include <array>
 
 BE_NAMESPACE
 {

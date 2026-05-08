@@ -23,6 +23,7 @@
 #include "gambit/Elements/type_equivalency.hpp"
 #include "gambit/Backends/backend_singleton.hpp"
 #include "gambit/cmake/cmake_variables.hpp"
+#include <set>
 
 namespace Gambit
 {

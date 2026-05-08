@@ -20,6 +20,7 @@
 #include "gambit/Backends/frontends/DarkSUSY_MSSM_6_4_0.hpp"
 #include "gambit/Utils/file_lock.hpp"
 #include "gambit/Utils/mpiwrapper.hpp"
+#include <fstream>
 
 //#define DARKSUSY_DEBUG
 

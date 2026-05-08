@@ -41,6 +41,7 @@
 #include "gambit/Utils/signal_handling.hpp"
 #include "gambit/Utils/mpiwrapper.hpp"
 #include "gambit/Utils/lnlike_modifiers.hpp"
+#include <unordered_map>
 
 //#define CORE_DEBUG
 

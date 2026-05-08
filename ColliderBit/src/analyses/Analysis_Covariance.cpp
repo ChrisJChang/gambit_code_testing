@@ -1,5 +1,6 @@
 #include "gambit/ColliderBit/analyses/Analysis.hpp"
 #include "gambit/ColliderBit/ATLASEfficiencies.hpp"
+#include <set>
 
 namespace Gambit {
   namespace ColliderBit {

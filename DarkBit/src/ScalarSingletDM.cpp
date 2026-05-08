@@ -27,6 +27,7 @@
 #include "gambit/Utils/ascii_table_reader.hpp"
 #include "boost/make_shared.hpp"
 #include "gambit/DarkBit/DarkBit_utils.hpp"
+#include <set>
 
 namespace Gambit
 {

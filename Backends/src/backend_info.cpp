@@ -34,6 +34,7 @@
 
 #ifdef HAVE_LINK_H
   #include <link.h>
+#include <fstream>
 #endif
 
 

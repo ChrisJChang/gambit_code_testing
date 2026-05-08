@@ -19,6 +19,7 @@
 #include "gambit/Utils/mpiwrapper.hpp"
 #include "gambit/Utils/threadsafe_rng.hpp"
 #include <unistd.h>
+#include <fstream>
 
 // Convenience functions (definitions)
 BE_NAMESPACE

@@ -21,6 +21,7 @@
 
 #include "gambit/Elements/spec.hpp"
 #include "gambit/Models/SpectrumContents/RegisteredSpectra.hpp"
+#include <set>
 
 namespace Gambit
 {

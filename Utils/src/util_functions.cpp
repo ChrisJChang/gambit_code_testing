@@ -46,6 +46,8 @@
 #include <boost/algorithm/string/iter_find.hpp>
 #include <boost/algorithm/string/finder.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <set>
+#include <fstream>
 
 namespace Gambit
 {

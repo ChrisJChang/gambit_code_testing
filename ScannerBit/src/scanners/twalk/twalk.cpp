@@ -28,6 +28,7 @@
 #include "scanner_plugin.hpp"
 #include "twalk.hpp"
 #include "mpi_distribute.hpp"
+#include <fstream>
 
 scanner_plugin(twalk, version(1, 0, 1))
 {

@@ -24,6 +24,7 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/assign.hpp>
+#include <set>
 
 namespace Gambit
 {

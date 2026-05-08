@@ -30,6 +30,7 @@
 #define MSSMSPEC_H
 
 #include <memory>
+#include <set>
 
 #include "gambit/Elements/slhaea_spec_helpers.hpp"
 #include "gambit/Elements/mssm_slhahelp.hpp"

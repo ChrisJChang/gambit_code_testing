@@ -16,6 +16,7 @@
 ///  *********************************************
 
 #include <vector>
+#include <fstream>
 #include "gambit/ScannerBit/scanners/jswarm/jswarm.hpp"
 
 scanner_plugin(jswarm, version(1, 0, 0))

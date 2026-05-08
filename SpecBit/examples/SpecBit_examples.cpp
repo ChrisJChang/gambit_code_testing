@@ -28,6 +28,7 @@
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/seq/elem.hpp>
 #include <boost/preprocessor/seq/for_each_product.hpp>
+#include <fstream>
 
 // For the demo output only
 #include "gambit/Utils/stream_overloads.hpp"

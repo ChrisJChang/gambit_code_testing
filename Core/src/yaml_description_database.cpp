@@ -25,6 +25,7 @@
 #include <vector>
 #include <sstream>
 #include <utility>
+#include <set>
 
 #include "gambit/Core/yaml_description_database.hpp"
 #include "gambit/Utils/util_types.hpp"

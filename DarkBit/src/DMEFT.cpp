@@ -23,6 +23,7 @@
 #include "gambit/DarkBit/DarkBit_rollcall.hpp"
 #include "gambit/Utils/ascii_table_reader.hpp"
 #include "gambit/DarkBit/DarkBit_utils.hpp"
+#include <set>
 
 namespace Gambit
 {

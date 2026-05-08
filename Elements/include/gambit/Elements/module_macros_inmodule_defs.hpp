@@ -44,6 +44,7 @@
 #include "gambit/Models/safe_param_map.hpp"
 
 #include <vector>
+#include <set>
 
 //  *******************************************************************************
 /// \name In-module rollcall macros

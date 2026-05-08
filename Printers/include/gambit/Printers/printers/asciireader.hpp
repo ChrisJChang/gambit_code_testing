@@ -20,6 +20,8 @@
 #include "gambit/Printers/baseprinter.hpp"
 #include "gambit/Printers/printers/asciitypes.hpp"
 #include <boost/preprocessor/seq/for_each_i.hpp>
+#include <set>
+#include <fstream>
 
 #ifndef __ascii_reader_hpp__
 #define __ascii_reader_hpp__

@@ -32,6 +32,8 @@
 #include "gambit/Printers/printers/hdf5printer/hdf5tools.hpp"
 #include "gambit/Printers/printers/hdf5printer/DataSetInterfaceScalar.hpp"
 #include "gambit/Utils/util_functions.hpp"
+#include <unordered_map>
+#include <unordered_set>
 
 // flag to trigger debug output
 //#define COMBINE_DEBUG

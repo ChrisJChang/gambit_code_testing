@@ -26,6 +26,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "gambit/ScannerBit/scanner_utils.hpp"
 #include "gambit/ScannerBit/scanner_plugin.hpp"

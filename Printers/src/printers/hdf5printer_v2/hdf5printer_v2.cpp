@@ -22,6 +22,7 @@
 #include <math.h>
 #include <limits>
 #include <iterator>
+#include <set>
 #include "gambit/Printers/printers/hdf5printer/hdf5tools.hpp"
 #include "gambit/Printers/printers/hdf5printer_v2.hpp"
 #include "gambit/Utils/util_functions.hpp"

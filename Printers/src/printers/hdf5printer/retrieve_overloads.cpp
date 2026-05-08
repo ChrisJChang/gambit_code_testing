@@ -24,6 +24,7 @@
 #include "gambit/Printers/printers/hdf5reader.hpp"
 #include "gambit/Printers/printers/hdf5printer.hpp"
 #include "gambit/Utils/util_functions.hpp"
+#include <set>
 
 namespace Gambit
 {

@@ -1,4 +1,5 @@
 #include "gambit/ColliderBit/mt2w.h"
+#include <cassert>
 
 double calculateMT2wHepUtils(vector<HEPUtils::P4>& jets, vector<bool>& btag, HEPUtils::P4& lep, float met, float metphi){
 

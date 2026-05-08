@@ -38,6 +38,7 @@
 #include "gambit/Models/SimpleSpectra/SMSimpleSpec.hpp" // For auto-creation of simple SM low-energy SubSpectrum
 #include "gambit/Utils/standalone_error_handlers.hpp"
 #include "gambit/Utils/file_lock.hpp"
+#include <fstream>
 
 //#define SPECTRUM_DEBUG
 

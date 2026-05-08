@@ -32,6 +32,7 @@
 #endif
 
 #include <boost/preprocessor/seq/for_each_i.hpp>
+#include <set>
 
 #ifndef __hdf5_reader_hpp__
 #define __hdf5_reader_hpp__

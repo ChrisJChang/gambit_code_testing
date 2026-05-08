@@ -50,6 +50,7 @@
 #include <stdint.h> // save memory addresses as int
 
 #include <gsl/gsl_linalg.h>
+#include <set>
 
 #include "gambit/Utils/yaml_options.hpp"
 #include "gambit/Utils/ascii_dict_reader.hpp"

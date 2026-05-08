@@ -17,6 +17,7 @@
 #include <vector>
 #include <limits>
 #include <fstream>
+#include <unordered_map>
 
 #include "gambit/ScannerBit/scanners/diver_1.3.0/diver.hpp"
 #include "gambit/Utils/yaml_options.hpp"

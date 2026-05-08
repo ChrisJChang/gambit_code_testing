@@ -30,6 +30,7 @@
 #include <unordered_map>
 #include <string>
 #include <type_traits>
+#include <fstream>
 
 #include "gambit/ScannerBit/plugin_details.hpp"
 #include "gambit/Utils/yaml_options.hpp"

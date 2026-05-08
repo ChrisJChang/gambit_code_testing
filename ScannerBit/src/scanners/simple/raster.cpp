@@ -26,6 +26,7 @@
 #include <iostream>
 #include <map>
 #include <sstream>
+#include <unordered_map>
 
 #include "gambit/ScannerBit/scanner_plugin.hpp"
 #include "gambit/Utils/threadsafe_rng.hpp"
