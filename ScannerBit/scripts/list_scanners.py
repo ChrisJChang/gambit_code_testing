@@ -54,6 +54,15 @@ def is_target_installed(build_dir, target):
     return os.path.exists(stamp)
 
 
+def is_scanner_lib_built(libname):
+    """Return True if ScannerBit/lib/lib<libname>.so exists, i.e. the GAMBIT
+    runtime interface library for this scanner has been built. Independent
+    of any external dependency (libdiver.so etc.) that may also be required
+    — this is just the GAMBIT-side library that ScannerBit dlopens."""
+    return os.path.exists(os.path.join(
+        _REPO, "ScannerBit", "lib", "lib" + libname + ".so"))
+
+
 def parse_excluded_yaml(path):
     """Return {libname: [reason, ...]} for every excluded library, where libname
     is the bare library identifier (e.g. "scanner_great", "scanner_python")."""
@@ -175,11 +184,15 @@ def main():
         return color + label + RESET + " " * (TAG_W - len(label))
 
     # Build (name, status_kind, info-string) tuples for the grouped
-    # (native+external) section. status_kind is one of:
+    # (native+external) section. The Status column answers "is this
+    # scanner ready to run right now?" — so [installed] requires every
+    # prerequisite to be in place: for an external scanner that means
+    # both the ExternalProject build (so libdiver.so etc. exists) and
+    # ScannerBit's own runtime interface library (libscanner_<x>.so);
+    # for a native scanner it just means the latter.
     #   "disabled"      — every version is excluded
-    #   "installed"     — at least one external version's stamp exists
-    #   "not_installed" — has external make targets but none built yet
-    #   ""              — native-only / nothing actionable to display
+    #   "installed"     — at least one version is fully ready to run
+    #   "not_installed" — none ready, but user actions can fix it
     grouped_rows = []
     for name in sorted(grouped, key=str.lower):
         versions = sorted(grouped[name], key=lambda v: v["version"])
@@ -187,13 +200,22 @@ def main():
         external_versions = [v for v in versions if v["target"]]
         native_versions   = [v for v in versions if not v["target"]]
 
+        def is_version_ready(v):
+            if v["disabled"]:
+                return False
+            if not is_scanner_lib_built(v["library"]):
+                return False
+            if v["target"] and not is_target_installed(build_dir, v["target"]):
+                return False
+            return True
+
         parts = []
         if external_versions:
             tgt_strs = []
             for v in external_versions:
                 if v["disabled"] and not all_disabled:
                     tgt_strs.append("{} [disabled]".format(v["target"]))
-                elif is_target_installed(build_dir, v["target"]):
+                elif is_version_ready(v):
                     tgt_strs.append("{} [installed]".format(v["target"]))
                 else:
                     tgt_strs.append(v["target"])
@@ -202,24 +224,20 @@ def main():
             parts.append("targets: " + DIM + "none; native GAMBIT scanner" + RESET)
         info = "  ".join(parts)
 
-        any_installed = any(
-            (not v["disabled"]) and is_target_installed(build_dir, v["target"])
-            for v in external_versions
-        )
+        any_ready = any(is_version_ready(v) for v in versions)
         if all_disabled:
             kind = "disabled"
-        elif any_installed:
+        elif any_ready:
             kind = "installed"
-        elif external_versions:
-            kind = "not_installed"
         else:
-            kind = ""
+            kind = "not_installed"
         grouped_rows.append((name, kind, info))
 
     # Python rows: one per scanner. Status is libscanner_python lib status (if
     # excluded, all are disabled) overlaid with per-scanner Python module
     # availability.
     py_lib_disabled = "scanner_python" in excluded
+    py_lib_built = is_scanner_lib_built("scanner_python")
     python_rows = []
     for line in python_scanner_lines:
         parts = line.split("|")
@@ -229,8 +247,17 @@ def main():
         pstatus = parts[1]
         # Restore "+" → ", " in the missing-pkgs field (see python_scanners.cmake).
         pmissing = parts[2].replace("+", ", ") if len(parts) > 2 else ""
-        disabled = py_lib_disabled or (pstatus != "enabled")
-        python_rows.append((pname, disabled, pmissing))
+        # "Ready to run" requires libscanner_python.so to exist and the
+        # required pip packages to be installed; "disabled" means the
+        # configure-time decision was that this scanner can't be built or
+        # used at all (libscanner_python excluded, or pip pkgs missing).
+        if py_lib_disabled or pstatus != "enabled":
+            kind = "disabled"
+        elif py_lib_built:
+            kind = "installed"
+        else:
+            kind = "not_installed"
+        python_rows.append((pname, kind, pmissing))
 
     # Compute column widths across both sections so they line up.
     all_names = [r[0] for r in grouped_rows] + [r[0] for r in python_rows]
@@ -269,10 +296,9 @@ def main():
             n=name, nw=name_w, tag=tag, info=info))
 
     # Print Python rows (sorted alphabetically for parity with the grouped section).
-    for name, disabled, missing in sorted(python_rows, key=lambda r: r[0].lower()):
-        kind = "disabled" if disabled else ""
+    for name, kind, missing in sorted(python_rows, key=lambda r: r[0].lower()):
         tag = make_tag(tag_label[kind], tag_color[kind])
-        if disabled:
+        if kind == "disabled":
             if missing:
                 body = "none; python plugin – install package(s) [{}] to enable".format(missing)
             else:
