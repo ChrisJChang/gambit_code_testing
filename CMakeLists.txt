@@ -631,6 +631,19 @@ list(REMOVE_ITEM MODULE_HARVESTER_FILES "${PROJECT_SOURCE_DIR}/ScannerBit//inclu
 list(APPEND MODULE_HARVESTER_FILES "${PROJECT_SOURCE_DIR}/config/resolution_type_equivalency_classes.yaml")
 set(MODULE_HARVESTER_FILES ${MODULE_HARVESTER_FILES} ${BACKEND_HARVESTER_FILES})
 remove_build_files(models_harvested backends_harvested modules_harvested printers_harvested colliders_harvested)
+
+# Add backends and scanners. (Done before the harvest custom-target
+# registration and update_cmakelists invocation below so that any late
+# additions to ${itch} from cmake/backends.cmake / cmake/scanners.cmake —
+# e.g. the FeynHiggs ditch for gfortran>=10 — are reflected in the
+# itch_with_commas string we pass to those steps. Otherwise the backend
+# harvester would still mark such backends "enabled" in
+# gambit_backend_interfaces.yaml even though no make targets exist to build them.)
+include(cmake/externals.cmake)
+
+# Reprocess the ditch set into a comma-separated list (final, post-externals).
+string (REPLACE ";" "," itch_with_commas "${itch}")
+
 if(EXISTS "${PROJECT_SOURCE_DIR}/Elements/")
   add_gambit_custom(module_harvest modules_harvested MODULE_HARVESTER MODULE_HARVESTER_FILES ${itch_with_commas})
 endif()
@@ -658,9 +671,6 @@ set(update_cmakelists ${PROJECT_SOURCE_DIR}/cmake/scripts/update_cmakelists.py -
 execute_process(RESULT_VARIABLE result COMMAND ${Python3_EXECUTABLE} ${update_cmakelists} WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 check_result(${result} ${update_cmakelists})
 message("${Yellow}-- Updating GAMBIT module, backend, and printer CMake files - done.${ColourReset}")
-
-# Add backends and scanners
-include(cmake/externals.cmake)
 
 # Add GAMBIT subdirectories.
 add_subdirectory(Logs)
@@ -709,7 +719,7 @@ gambit_print_available_backend_targets()
 # known backend, including which Bits use it. The data file is rewritten on
 # each cmake configure to reflect the current set of active targets.
 file(WRITE "${PROJECT_BINARY_DIR}/list_backends_data.txt"
-     "TARGETS=${GAMBIT_AVAILABLE_BACKEND_TARGETS}\nBUILD_DIR=${PROJECT_BINARY_DIR}\n")
+     "TARGETS=${GAMBIT_AVAILABLE_BACKEND_TARGETS}\nBUILD_DIR=${PROJECT_BINARY_DIR}\nDITCHED=${itch}\n")
 add_custom_target(list-backends
   COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/Backends/scripts/list_backends.py ${PROJECT_BINARY_DIR}/list_backends_data.txt
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}

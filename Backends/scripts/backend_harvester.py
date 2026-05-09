@@ -239,7 +239,7 @@ def main(argv):
         print("Generated backend_types_rollcall.hpp.\n")
 
     import yaml
-    with open("./config/gambit_backends.yaml", "w+") as f:
+    with open("./config/gambit_backend_interfaces.yaml", "w+") as f:
         yaml.dump({
             "enabled": extract_yaml_for_diagnostic(frontend_headers),
             "disabled": extract_yaml_for_diagnostic(frontend_headers_excluded)

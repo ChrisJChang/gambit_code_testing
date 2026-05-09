@@ -73,7 +73,7 @@ if(EXISTS "${PROJECT_SOURCE_DIR}/ScannerBit/")
 endif()
 
 # Arrange for removal of other generated files upon "make clean".
-set(clean_files ${clean_files} "${PROJECT_SOURCE_DIR}/config/gambit_backends.yaml")
+set(clean_files ${clean_files} "${PROJECT_SOURCE_DIR}/config/gambit_backend_interfaces.yaml")
 
 # Add all the clean files
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${clean_files}")
