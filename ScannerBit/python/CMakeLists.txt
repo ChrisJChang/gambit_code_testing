@@ -20,7 +20,7 @@ if(Python3_Interpreter_FOUND)
     ################## ScannerBit_python_interface ##################
     
     set(scan_module_libraries
-        #${PYTHON_LIBRARIES}
+        #${Python3_LIBRARIES}
         yaml-cpp
         ${OpenMP_omp_LIBRARY}
     )
