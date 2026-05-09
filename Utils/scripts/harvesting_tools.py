@@ -716,43 +716,21 @@ def get_all_backendnames(frontend_dir):
     return backends
 
 
-def derive_used_backends_via_token_sweep(enabled_bits, project_root, all_backends):
-    """Return the subset of all_backends whose name occurs as a token in any enabled Bit's include/src/examples tree."""
-    if not all_backends or not enabled_bits:
+def derive_used_backends(enabled_bits, project_root, frontend_dir):
+    """Return the set of backends used by any of the enabled Bits, derived
+    via rollcall-macro analysis (BACKEND_REQ / LONG_BACKEND_REQ capabilities
+    matched against frontend BE_FUNCTION/BE_VARIABLE/BE_CONV_FUNCTION
+    declarations, plus NEEDS_CLASSES_FROM for BOSSed-class deps, plus the
+    hard-coded overrides in _KNOWN_BIT_USES_OVERRIDES).
+
+    This mirrors the resolution that the GAMBIT dependency resolver
+    performs at runtime, so it doesn't keep backends alive merely because
+    their name shows up in a doc comment or a string literal."""
+    if not enabled_bits:
         return set()
-    # Sort longest-first so the alternation prefers e.g. DarkSUSY_MSSM over DarkSUSY.
-    sorted_backends = sorted(all_backends, key=len, reverse=True)
-    # Match BACKENDNAME at a token boundary, but allow a trailing _suffix so
-    # that e.g. `BEreq::SUSYHD_MHiggs(...)` counts as a SUSYHD reference.
-    pattern = re.compile(
-        r'(?<![A-Za-z0-9_])(' +
-        '|'.join(re.escape(b) for b in sorted_backends) +
-        r')(?![A-Za-z0-9])')
-    hits = set()
-    subdirs = ("include", "src", "examples")
-    for bit in enabled_bits:
-        bit_dir = os.path.join(project_root, bit)
-        if not os.path.isdir(bit_dir):
-            continue
-        for sub in subdirs:
-            walk_root = os.path.join(bit_dir, sub)
-            if not os.path.isdir(walk_root):
-                continue
-            for root, _dirs, files in os.walk(walk_root):
-                for name in files:
-                    if not name.endswith(_SOURCE_EXTS):
-                        continue
-                    try:
-                        with io.open(os.path.join(root, name), "r",
-                                     encoding="utf-8", errors="replace") as f:
-                            text = f.read()
-                    except (IOError, OSError):
-                        continue
-                    for m in pattern.finditer(text):
-                        hits.add(m.group(1))
-                    if len(hits) == len(all_backends):
-                        return hits
-    return hits
+    bits_per_backend = compute_bits_per_backend(project_root, frontend_dir)
+    enabled = set(enabled_bits)
+    return {b for b, bits in bits_per_backend.items() if any(bit in enabled for bit in bits)}
 
 
 def derive_optin_backend_excludes(enabled_bits, project_root,
@@ -760,43 +738,150 @@ def derive_optin_backend_excludes(enabled_bits, project_root,
     """Return (auto_excluded, used_backends, all_backends) for the opt-in build path."""
     force_keep = set(force_keep_backends or [])
     all_backends = get_all_backendnames(frontend_dir)
-    used = derive_used_backends_via_token_sweep(enabled_bits, project_root, all_backends)
+    used = derive_used_backends(enabled_bits, project_root, frontend_dir)
     used |= force_keep
     auto_excluded = all_backends - used
     return auto_excluded, used, all_backends
 
 
+# Hard-coded overrides for backends whose Bit attribution can't be derived
+# statically from rollcall macros. Two cases today:
+#   * DDCalc: DarkBit calls into DDCalc via LONG_BACKEND_REQ with capability
+#     names assembled by C-preprocessor concatenation (CAT_3(EXPERIMENT,_,NAME)).
+#     A static parser can't resolve those token-pastes.
+#   * HepLikeData: pure-data backend; FlavBit depends on it structurally (data
+#     files at runtime) but never references it through BACKEND_REQ /
+#     NEEDS_CLASSES_FROM.
+# If a future Bit starts/stops using one of these, update this map.
+_KNOWN_BIT_USES_OVERRIDES = {
+    "DDCalc":      ["DarkBit"],
+    "HepLikeData": ["FlavBit"],
+}
+
+_CXX_BLOCK_COMMENT_RE = re.compile(r'/\*.*?\*/', re.DOTALL)
+_CXX_LINE_COMMENT_RE  = re.compile(r'//[^\n]*')
+
+def _strip_cxx_comments(text):
+    """Approximate C++ comment removal good enough for token-level scans of
+    GAMBIT source. Not perfect inside string literals, but backends are not
+    referenced via string literals here, so the trade-off is safe."""
+    return _CXX_LINE_COMMENT_RE.sub('', _CXX_BLOCK_COMMENT_RE.sub('', text))
+
+_FRONTEND_SHARED_INCLUDE_RE = re.compile(
+    r'^\s*#\s*include\s+"(gambit/Backends/frontends/shared_includes/[^"]+)"',
+    re.MULTILINE)
+
+def _read_frontend_recursive(path, backends_inc_dir, _seen=None):
+    """Read a frontend .hpp, strip comments, and inline any
+    'gambit/Backends/frontends/shared_includes/...' headers it pulls in
+    (e.g. MicrOmegas singlet-DM variants share BE_* declarations through a
+    common file). Returns the concatenated text."""
+    if _seen is None: _seen = set()
+    if path in _seen or not os.path.exists(path):
+        return ""
+    _seen.add(path)
+    try:
+        with io.open(path, "r", encoding="utf-8", errors="replace") as f:
+            text = _strip_cxx_comments(f.read())
+    except (IOError, OSError):
+        return ""
+    out = text
+    for m in _FRONTEND_SHARED_INCLUDE_RE.finditer(text):
+        sub_path = os.path.join(backends_inc_dir, m.group(1))
+        out += "\n" + _read_frontend_recursive(sub_path, backends_inc_dir, _seen)
+    return out
+
+_BE_MACRO_RE = re.compile(r'\bBE_(?:FUNCTION|VARIABLE|CONV_FUNCTION)\s*\(')
+
+def _extract_be_capabilities(text):
+    """Return the set of capability names a frontend file declares. The
+    capability is the last quoted-string argument inside BE_FUNCTION,
+    BE_VARIABLE, or BE_CONV_FUNCTION; the macro args may contain nested
+    parentheses (e.g. C++ argument-type lists), so we walk to the matching
+    closing paren rather than using a flat regex."""
+    caps = set()
+    for m in _BE_MACRO_RE.finditer(text):
+        depth, i = 1, m.end()
+        while i < len(text) and depth > 0:
+            if   text[i] == '(': depth += 1
+            elif text[i] == ')': depth -= 1
+            i += 1
+        quotes = re.findall(r'"([^"]+)"', text[m.end():i-1])
+        if quotes:
+            caps.add(quotes[-1])
+    return caps
+
+_BIT_REQ_RE = re.compile(r'\b(?:LONG_)?BACKEND_REQ(?:_FROM_GROUP)?\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)')
+_BIT_NCF_RE = re.compile(r'\bNEEDS_CLASSES_FROM\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)')
+
+
 def compute_bits_per_backend(project_root, frontend_dir):
-    """Return a dict mapping each canonical BACKENDNAME to the sorted list of Bit names whose include/src/examples tree mentions it."""
+    """Return a dict mapping each canonical BACKENDNAME to the sorted list of
+    Bit names that depend on it, using GAMBIT's rollcall macros as the
+    source of truth.
+
+    A Bit is attributed to a backend if either:
+      * the Bit's rollcall headers contain (LONG_)BACKEND_REQ for any
+        capability the backend's frontend declares via BE_FUNCTION,
+        BE_VARIABLE, or BE_CONV_FUNCTION (following shared_includes), or
+      * the Bit's headers contain NEEDS_CLASSES_FROM(<BackendName>, ...),
+        used for BOSSed-class dependencies.
+
+    A small hard-coded override map (_KNOWN_BIT_USES_OVERRIDES) covers the
+    cases where capability names are constructed via C-preprocessor token
+    pasting at the call site, or where the dependency is purely structural
+    (data files only, no rollcall-macro reference)."""
     all_backends = get_all_backendnames(frontend_dir)
     if not all_backends:
         return {}
-    sorted_backends = sorted(all_backends, key=len, reverse=True)
-    pattern = re.compile(
-        r'(?<![A-Za-z0-9_])(' +
-        '|'.join(re.escape(b) for b in sorted_backends) +
-        r')(?![A-Za-z0-9])')
-    result = {b: set() for b in all_backends}
+
+    # Step 1: each backend's frontend capability set, with shared-include inlining.
+    # frontend_dir = "<project>/Backends/include/gambit/Backends/frontends"
+    # 3 levels up gets us to "<project>/Backends/include" — the include root
+    # used by the shared_includes/ path.
+    backends_inc_dir = os.path.normpath(os.path.join(frontend_dir, "..", "..", ".."))
+    caps_by_backend = {b: set() for b in all_backends}
+    if os.path.isdir(frontend_dir):
+        for fn in sorted(os.listdir(frontend_dir)):
+            if not fn.endswith(".hpp"):
+                continue
+            backend = derive_backendname_from_filename(fn[:-len(".hpp")])
+            if backend not in all_backends:
+                continue
+            text = _read_frontend_recursive(
+                os.path.join(frontend_dir, fn), backends_inc_dir)
+            caps_by_backend[backend] |= _extract_be_capabilities(text)
+
+    # Step 2: each Bit's requested capabilities and NEEDS_CLASSES_FROM names.
     bit_dirs = sorted(d for d in os.listdir(project_root)
                       if 'Bit' in d and os.path.isdir(os.path.join(project_root, d)))
+    result = {b: set() for b in all_backends}
     for bit in bit_dirs:
-        bit_path = os.path.join(project_root, bit)
-        for sub in ("include", "src", "examples"):
-            walk_root = os.path.join(bit_path, sub)
-            if not os.path.isdir(walk_root):
-                continue
-            for root, _dirs, files in os.walk(walk_root):
-                for name in files:
-                    if not name.endswith(_SOURCE_EXTS):
-                        continue
-                    try:
-                        with io.open(os.path.join(root, name), "r",
-                                     encoding="utf-8", errors="replace") as f:
-                            text = f.read()
-                    except (IOError, OSError):
-                        continue
-                    for m in pattern.finditer(text):
-                        result[m.group(1)].add(bit)
+        inc_dir = os.path.join(project_root, bit, "include")
+        if not os.path.isdir(inc_dir):
+            continue
+        bit_caps, bit_ncfs = set(), set()
+        for root, _dirs, files in os.walk(inc_dir):
+            for fn in files:
+                if not fn.endswith((".hpp", ".h", ".hh")):
+                    continue
+                try:
+                    with io.open(os.path.join(root, fn), "r",
+                                 encoding="utf-8", errors="replace") as f:
+                        text = _strip_cxx_comments(f.read())
+                except (IOError, OSError):
+                    continue
+                for m in _BIT_REQ_RE.finditer(text): bit_caps.add(m.group(1))
+                for m in _BIT_NCF_RE.finditer(text): bit_ncfs.add(m.group(1))
+        for be in all_backends:
+            if (caps_by_backend[be] & bit_caps) or (be in bit_ncfs):
+                result[be].add(bit)
+
+    # Step 3: apply hard-coded overrides.
+    for be, bits in _KNOWN_BIT_USES_OVERRIDES.items():
+        if be in result:
+            result[be].update(bits)
+
     return {b: sorted(s) for b, s in result.items()}
 
 

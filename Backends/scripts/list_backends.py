@@ -63,10 +63,21 @@ def main():
     targets_by_canonical = {b: [] for b in all_backends}
     for t in active_targets:
         tl = t.lower()
+        matched = False
         for canonical in canonicals_by_len:
             if tl.startswith(canonical.lower() + "_"):
                 targets_by_canonical[canonical].append(t)
+                matched = True
                 break
+        # Fallback: try the collapsed-underscore form, for canonicals where
+        # the make target drops internal underscores (e.g. SUSY_HIT
+        # -> susyhit_1.5).
+        if not matched:
+            for canonical in canonicals_by_len:
+                cl = canonical.replace("_", "").lower()
+                if cl != canonical.lower() and tl.startswith(cl + "_"):
+                    targets_by_canonical[canonical].append(t)
+                    break
 
     rows = []
     for canonical in sorted(all_backends, key=lambda s: s.lower()):
@@ -76,8 +87,8 @@ def main():
         rows.append((canonical, active, bits, targets))
 
     name_w = max(len(r[0]) for r in rows)
-    name_w = max(name_w, len("Name"))
-    bits_w = max(len(", ".join(r[2]) if r[2] else "(none)") for r in rows)
+    name_w = max(name_w, len("Backend"))
+    bits_w = max(len(", ".join(r[2]) if r[2] else "none") for r in rows)
     # "used by: " column spans the literal prefix (9 chars) plus the padded
     # bits string. Bump to fit the "Used by Bits" header if narrower.
     used_by_col_w = max(9 + bits_w, len("Used by Bits"))
@@ -86,6 +97,7 @@ def main():
     YELLOW = "\033[33m" if use_color else ""
     GREEN  = "\033[32m" if use_color else ""
     CYAN   = "\033[36m" if use_color else ""
+    DIM    = "\033[2m"  if use_color else ""
     BOLD   = "\033[1m" if use_color else ""
     RESET  = "\033[0m" if use_color else ""
 
@@ -101,7 +113,7 @@ def main():
     # Header row + dashed separator.
     print("  {bold}{h1:<{nw}}  {h2:<{tw}}  {h3:<{w3}}  {h4}{reset}".format(
         bold=BOLD, reset=RESET,
-        h1="Name",   nw=name_w,
+        h1="Backend", nw=name_w,
         h2="Status", tw=TAG_W,
         h3="Used by Bits", w3=used_by_col_w,
         h4="Make targets"))
@@ -109,9 +121,18 @@ def main():
         "-" * name_w, "-" * TAG_W, "-" * used_by_col_w, "-" * len("Make targets")))
 
     for name, active, bits, targets in rows:
-        bits_str = ", ".join(bits) if bits else "(none)"
+        # Bits column: dim "none" when empty. ANSI codes don't take visible
+        # width, so do the column-padding manually rather than via {:<{bw}}.
+        if bits:
+            bits_visible = ", ".join(bits)
+            bits_field   = bits_visible + " " * (bits_w - len(bits_visible))
+        else:
+            bits_field = DIM + "none" + RESET + " " * (bits_w - len("none"))
+
+        # Targets column: dim "none" when no targets; otherwise annotate
+        # individually-installed targets inline.
         if not targets:
-            targets_str = "(none)"
+            targets_field = DIM + "none" + RESET
         else:
             ann = []
             for t in targets:
@@ -119,7 +140,7 @@ def main():
                     ann.append("{} [installed]".format(t))
                 else:
                     ann.append(t)
-            targets_str = ", ".join(ann)
+            targets_field = ", ".join(ann)
 
         if not active:
             kind = "disabled"
@@ -134,8 +155,8 @@ def main():
         tag_label = {"disabled": "[disabled]", "installed": "[installed]",
                      "not_installed": "[not installed]", "": ""}[kind]
         tag = make_tag(tag_label, tag_color)
-        print("  {name:<{nw}}  {tag}  used by: {bits:<{bw}}  targets: {tgts}".format(
-            name=name, nw=name_w, tag=tag, bits=bits_str, bw=bits_w, tgts=targets_str))
+        print("  {name:<{nw}}  {tag}  used by: {bits}  targets: {tgts}".format(
+            name=name, nw=name_w, tag=tag, bits=bits_field, tgts=targets_field))
 
 
 if __name__ == "__main__":

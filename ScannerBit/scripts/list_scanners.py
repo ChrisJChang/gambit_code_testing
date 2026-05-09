@@ -199,7 +199,7 @@ def main():
                     tgt_strs.append(v["target"])
             parts.append("targets: " + ", ".join(tgt_strs))
         if native_versions and not external_versions:
-            parts.append("native (no make targets)")
+            parts.append("targets: " + DIM + "none; native GAMBIT scanner" + RESET)
         info = "  ".join(parts)
 
         any_installed = any(
@@ -227,21 +227,23 @@ def main():
             continue
         pname = parts[0]
         pstatus = parts[1]
+        # Restore "+" → ", " in the missing-pkgs field (see python_scanners.cmake).
+        pmissing = parts[2].replace("+", ", ") if len(parts) > 2 else ""
         disabled = py_lib_disabled or (pstatus != "enabled")
-        python_rows.append((pname, disabled))
+        python_rows.append((pname, disabled, pmissing))
 
     # Compute column widths across both sections so they line up.
     all_names = [r[0] for r in grouped_rows] + [r[0] for r in python_rows]
     if not all_names:
         print("  (no scanner plugins found)")
         return
-    name_w = max(max(len(n) for n in all_names), len("Name"))
+    name_w = max(max(len(n) for n in all_names), len("Scanner"))
 
     # Header row + dashed separator.
     BOLD = "\033[1m" if use_color else ""
     print("  {bold}{h1:<{nw}}  {h2:<{tw}}  {h3}{reset}".format(
         bold=BOLD, reset=RESET,
-        h1="Name", nw=name_w,
+        h1="Scanner", nw=name_w,
         h2="Status", tw=TAG_W,
         h3="Make targets"))
     print("  {0}  {1}  {2}".format(
@@ -267,11 +269,19 @@ def main():
             n=name, nw=name_w, tag=tag, info=info))
 
     # Print Python rows (sorted alphabetically for parity with the grouped section).
-    for name, disabled in sorted(python_rows, key=lambda r: r[0].lower()):
+    for name, disabled, missing in sorted(python_rows, key=lambda r: r[0].lower()):
         kind = "disabled" if disabled else ""
         tag = make_tag(tag_label[kind], tag_color[kind])
-        print("  {n:<{nw}}  {tag}  python (no make targets)".format(
-            n=name, nw=name_w, tag=tag))
+        if disabled:
+            if missing:
+                body = "none; python plugin – install package(s) [{}] to enable".format(missing)
+            else:
+                body = "none; python plugin – install package(s) to enable"
+        else:
+            body = "none; python plugin"
+        info = "targets: " + DIM + body + RESET
+        print("  {n:<{nw}}  {tag}  {info}".format(
+            n=name, nw=name_w, tag=tag, info=info))
 
 
 if __name__ == "__main__":
