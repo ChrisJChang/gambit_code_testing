@@ -715,3 +715,15 @@ add_custom_target(list-backends
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   USES_TERMINAL)
 add_dependencies(list-backends backend_harvest)
+
+# Register a `make list-scanners` target that prints an analogous status table
+# for scanner plugins (external, native, and Python). The data file is
+# rewritten on each cmake configure; the script also reads
+# scratch/build_time/scanbit_excluded_libs.yaml (written by ScannerBit) and
+# walks ScannerBit/src/scanners/ for the canonical native plugin list.
+file(WRITE "${PROJECT_BINARY_DIR}/list_scanners_data.txt"
+     "EXTERNAL_TARGETS=${GAMBIT_AVAILABLE_SCANNER_TARGETS}\nPYTHON_SCANNERS=${GAMBIT_PYTHON_SCANNER_STATUS}\n")
+add_custom_target(list-scanners
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/ScannerBit/scripts/list_scanners.py ${PROJECT_BINARY_DIR}/list_scanners_data.txt
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+  USES_TERMINAL)

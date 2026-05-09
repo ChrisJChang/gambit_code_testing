@@ -167,6 +167,11 @@ macro(add_extra_targets type package ver dir dl target)
     list(APPEND GAMBIT_AVAILABLE_BACKEND_TARGETS "${package}_${ver}")
   endif()
 
+  # Track available scanner make targets for the list-scanners helper.
+  if (${type} STREQUAL "scanner")
+    list(APPEND GAMBIT_AVAILABLE_SCANNER_TARGETS "${package}_${ver}")
+  endif()
+
   #Add extra targets common to everything.
   enable_auto_rebuild(${pname})
   set_target_properties(${pname} PROPERTIES EXCLUDE_FROM_ALL 1)
