@@ -754,6 +754,30 @@ function(gambit_translate_bits_into_itch)
     return()
   endif()
 
+  # A Bit can't be both kept (-DBits) and ditched (-Ditch). Error rather
+  # than silently letting -Ditch win, which would otherwise quietly drop a
+  # Bit the user explicitly asked to keep.
+  set(_conflicts "")
+  foreach(_b ${Bits})
+    string(TOLOWER "${_b}" _b_lower)
+    foreach(_i ${itch})
+      string(TOLOWER "${_i}" _i_lower)
+      if(_b_lower STREQUAL _i_lower)
+        list(APPEND _conflicts "${_b}")
+      endif()
+    endforeach()
+  endforeach()
+  if(_conflicts)
+    list(REMOVE_DUPLICATES _conflicts)
+    string(REPLACE ";" ", " _conflicts_csv "${_conflicts}")
+    message(FATAL_ERROR
+      "\nThe following entries appear in both -DBits and -Ditch: "
+      "${_conflicts_csv}.\n"
+      "A Bit cannot be simultaneously kept and ditched. Please remove "
+      "the conflicting entries from one of the two arguments and "
+      "reconfigure.\n")
+  endif()
+
   message("${BoldYellow}-- Bits=\"${Bits}\" requested; restricting build to these Bits (+ ScannerBit).${ColourReset}")
 
   # Warn about -DBits entries that don't match a real Bit directory.
