@@ -172,7 +172,7 @@ def main():
                     tgt_strs.append(v["target"])
             parts.append("targets: " + ", ".join(tgt_strs))
         if native_versions and not external_versions:
-            parts.append("native")
+            parts.append("native (no make targets)")
         info = "  ".join(parts)
 
         grouped_rows.append((name, all_disabled, any_disabled and not all_disabled, info))
@@ -209,7 +209,7 @@ def main():
 
     # Print Python rows (sorted alphabetically for parity with the grouped section).
     for name, disabled in sorted(python_rows, key=lambda r: r[0].lower()):
-        print("  {n:<{nw}}  {tag}  python".format(
+        print("  {n:<{nw}}  {tag}  python (no make targets)".format(
             n=name, nw=name_w, tag=disable_tag(disabled)))
 
 
