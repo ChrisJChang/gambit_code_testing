@@ -30,13 +30,28 @@ _REPO = os.path.normpath(os.path.join(_HERE, "..", ".."))
 def parse_data_file(path):
     external_targets = []
     python_scanners = []
+    build_dir = ""
     with io.open(path, "r") as f:
         for line in f:
             if line.startswith("EXTERNAL_TARGETS="):
                 external_targets = [s for s in line[len("EXTERNAL_TARGETS="):].rstrip("\n").split(";") if s]
             elif line.startswith("PYTHON_SCANNERS="):
                 python_scanners = [s for s in line[len("PYTHON_SCANNERS="):].rstrip("\n").split(";") if s]
-    return external_targets, python_scanners
+            elif line.startswith("BUILD_DIR="):
+                build_dir = line[len("BUILD_DIR="):].rstrip("\n").strip()
+    return external_targets, python_scanners, build_dir
+
+
+def is_target_installed(build_dir, target):
+    """An ExternalProject_Add target writes a <target>-done stamp into its
+    stamp dir once configure/build/install all succeed. The stamp persists
+    across cmake reconfigures and is removed by the corresponding clean/nuke
+    targets, so it tracks reality."""
+    if not build_dir or not target:
+        return False
+    stamp = os.path.join(build_dir, target + "-prefix", "src",
+                         target + "-stamp", target + "-done")
+    return os.path.exists(stamp)
 
 
 def parse_excluded_yaml(path):
@@ -114,7 +129,7 @@ def main():
         sys.stderr.write("Usage: list_scanners.py <data_file>\n")
         sys.exit(2)
 
-    external_targets, python_scanner_lines = parse_data_file(sys.argv[1])
+    external_targets, python_scanner_lines, build_dir = parse_data_file(sys.argv[1])
     excluded = parse_excluded_yaml(
         os.path.join(_REPO, "scratch", "build_time", "scanbit_excluded_libs.yaml")
     )
@@ -146,19 +161,29 @@ def main():
 
     use_color = sys.stdout.isatty()
     YELLOW = "\033[33m" if use_color else ""
+    GREEN  = "\033[32m" if use_color else ""
+    CYAN   = "\033[36m" if use_color else ""
     DIM    = "\033[2m"  if use_color else ""
     RESET  = "\033[0m"  if use_color else ""
 
-    def disable_tag(disabled):
-        return (YELLOW + "[disabled]" + RESET) if disabled else " " * 10
+    # Status column tags: width 15 to fit the longest visible label
+    # ("[not installed]"). ANSI color codes don't take visible width.
+    TAG_W = len("[not installed]")
+    def make_tag(label, color):
+        if not label:
+            return " " * TAG_W
+        return color + label + RESET + " " * (TAG_W - len(label))
 
-    # Build (name, row-disabled, info-string, reason-string) tuples for the
-    # grouped (native+external) section.
+    # Build (name, status_kind, info-string) tuples for the grouped
+    # (native+external) section. status_kind is one of:
+    #   "disabled"      — every version is excluded
+    #   "installed"     — at least one external version's stamp exists
+    #   "not_installed" — has external make targets but none built yet
+    #   ""              — native-only / nothing actionable to display
     grouped_rows = []
     for name in sorted(grouped, key=str.lower):
         versions = sorted(grouped[name], key=lambda v: v["version"])
         all_disabled = all(v["disabled"] for v in versions)
-        any_disabled = any(v["disabled"] for v in versions)
         external_versions = [v for v in versions if v["target"]]
         native_versions   = [v for v in versions if not v["target"]]
 
@@ -168,6 +193,8 @@ def main():
             for v in external_versions:
                 if v["disabled"] and not all_disabled:
                     tgt_strs.append("{} [disabled]".format(v["target"]))
+                elif is_target_installed(build_dir, v["target"]):
+                    tgt_strs.append("{} [installed]".format(v["target"]))
                 else:
                     tgt_strs.append(v["target"])
             parts.append("targets: " + ", ".join(tgt_strs))
@@ -175,7 +202,19 @@ def main():
             parts.append("native (no make targets)")
         info = "  ".join(parts)
 
-        grouped_rows.append((name, all_disabled, any_disabled and not all_disabled, info))
+        any_installed = any(
+            (not v["disabled"]) and is_target_installed(build_dir, v["target"])
+            for v in external_versions
+        )
+        if all_disabled:
+            kind = "disabled"
+        elif any_installed:
+            kind = "installed"
+        elif external_versions:
+            kind = "not_installed"
+        else:
+            kind = ""
+        grouped_rows.append((name, kind, info))
 
     # Python rows: one per scanner. Status is libscanner_python lib status (if
     # excluded, all are disabled) overlaid with per-scanner Python module
@@ -200,27 +239,39 @@ def main():
 
     # Header row + dashed separator.
     BOLD = "\033[1m" if use_color else ""
-    print("  {bold}{h1:<{nw}}  {h2:<10}  {h3}{reset}".format(
+    print("  {bold}{h1:<{nw}}  {h2:<{tw}}  {h3}{reset}".format(
         bold=BOLD, reset=RESET,
         h1="Name", nw=name_w,
-        h2="Status",
+        h2="Status", tw=TAG_W,
         h3="Make targets"))
     print("  {0}  {1}  {2}".format(
-        "-" * name_w, "-" * 10, "-" * len("Make targets")))
+        "-" * name_w, "-" * TAG_W, "-" * len("Make targets")))
+
+    tag_color = {
+        "disabled":      YELLOW,
+        "installed":     GREEN,
+        "not_installed": CYAN,
+        "":              "",
+    }
+    tag_label = {
+        "disabled":      "[disabled]",
+        "installed":     "[installed]",
+        "not_installed": "[not installed]",
+        "":              "",
+    }
 
     # Print grouped (native+external) rows.
-    for name, all_disabled, partial, info in grouped_rows:
-        if partial:
-            tag = DIM + "[partial] " + RESET
-        else:
-            tag = disable_tag(all_disabled)
+    for name, kind, info in grouped_rows:
+        tag = make_tag(tag_label[kind], tag_color[kind])
         print("  {n:<{nw}}  {tag}  {info}".format(
             n=name, nw=name_w, tag=tag, info=info))
 
     # Print Python rows (sorted alphabetically for parity with the grouped section).
     for name, disabled in sorted(python_rows, key=lambda r: r[0].lower()):
+        kind = "disabled" if disabled else ""
+        tag = make_tag(tag_label[kind], tag_color[kind])
         print("  {n:<{nw}}  {tag}  python (no make targets)".format(
-            n=name, nw=name_w, tag=disable_tag(disabled)))
+            n=name, nw=name_w, tag=tag))
 
 
 if __name__ == "__main__":

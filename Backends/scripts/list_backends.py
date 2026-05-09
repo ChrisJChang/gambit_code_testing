@@ -31,11 +31,23 @@ def main():
         sys.exit(2)
 
     active_targets = []
+    build_dir = ""
     with io.open(sys.argv[1], "r") as f:
         for line in f:
             if line.startswith("TARGETS="):
                 active_targets = [s for s in line[len("TARGETS="):].rstrip("\n").split(";") if s]
-                break
+            elif line.startswith("BUILD_DIR="):
+                build_dir = line[len("BUILD_DIR="):].rstrip("\n").strip()
+
+    def is_target_installed(target):
+        """ExternalProject_Add writes a <target>-done stamp into its stamp dir
+        once configure/build/install all succeed; gambit's clean/nuke targets
+        remove it, so the stamp tracks reality."""
+        if not build_dir or not target:
+            return False
+        return os.path.exists(os.path.join(
+            build_dir, target + "-prefix", "src",
+            target + "-stamp", target + "-done"))
 
     with io.open("./config/gambit_backends.yaml", "r") as f:
         bdata = yaml.safe_load(f) or {}
@@ -72,26 +84,56 @@ def main():
     bits_w = used_by_col_w - 9
     use_color = sys.stdout.isatty()
     YELLOW = "\033[33m" if use_color else ""
+    GREEN  = "\033[32m" if use_color else ""
+    CYAN   = "\033[36m" if use_color else ""
     BOLD   = "\033[1m" if use_color else ""
     RESET  = "\033[0m" if use_color else ""
 
+    # Status column tags: width 15 to fit "[not installed]" (longest visible
+    # label). ANSI codes don't add visible width, so explicit space-padding
+    # after the colored bracket keeps every row aligned.
+    TAG_W = len("[not installed]")
+    def make_tag(label, color):
+        if not label:
+            return " " * TAG_W
+        return color + label + RESET + " " * (TAG_W - len(label))
+
     # Header row + dashed separator.
-    print("  {bold}{h1:<{nw}}  {h2:<10}  {h3:<{w3}}  {h4}{reset}".format(
+    print("  {bold}{h1:<{nw}}  {h2:<{tw}}  {h3:<{w3}}  {h4}{reset}".format(
         bold=BOLD, reset=RESET,
         h1="Name",   nw=name_w,
-        h2="Status",
+        h2="Status", tw=TAG_W,
         h3="Used by Bits", w3=used_by_col_w,
         h4="Make targets"))
     print("  {0}  {1}  {2}  {3}".format(
-        "-" * name_w, "-" * 10, "-" * used_by_col_w, "-" * len("Make targets")))
+        "-" * name_w, "-" * TAG_W, "-" * used_by_col_w, "-" * len("Make targets")))
 
     for name, active, bits, targets in rows:
-        bits_str    = ", ".join(bits)    if bits    else "(none)"
-        targets_str = ", ".join(targets) if targets else "(none)"
-        if active:
-            tag = " " * 10                    # blank slot, same width as [disabled]
+        bits_str = ", ".join(bits) if bits else "(none)"
+        if not targets:
+            targets_str = "(none)"
         else:
-            tag = YELLOW + "[disabled]" + RESET
+            ann = []
+            for t in targets:
+                if is_target_installed(t):
+                    ann.append("{} [installed]".format(t))
+                else:
+                    ann.append(t)
+            targets_str = ", ".join(ann)
+
+        if not active:
+            kind = "disabled"
+        elif targets and any(is_target_installed(t) for t in targets):
+            kind = "installed"
+        elif targets:
+            kind = "not_installed"
+        else:
+            kind = ""
+        tag_color = {"disabled": YELLOW, "installed": GREEN,
+                     "not_installed": CYAN, "": ""}[kind]
+        tag_label = {"disabled": "[disabled]", "installed": "[installed]",
+                     "not_installed": "[not installed]", "": ""}[kind]
+        tag = make_tag(tag_label, tag_color)
         print("  {name:<{nw}}  {tag}  used by: {bits:<{bw}}  targets: {tgts}".format(
             name=name, nw=name_w, tag=tag, bits=bits_str, bw=bits_w, tgts=targets_str))
 

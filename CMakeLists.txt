@@ -709,7 +709,7 @@ gambit_print_available_backend_targets()
 # known backend, including which Bits use it. The data file is rewritten on
 # each cmake configure to reflect the current set of active targets.
 file(WRITE "${PROJECT_BINARY_DIR}/list_backends_data.txt"
-     "TARGETS=${GAMBIT_AVAILABLE_BACKEND_TARGETS}\n")
+     "TARGETS=${GAMBIT_AVAILABLE_BACKEND_TARGETS}\nBUILD_DIR=${PROJECT_BINARY_DIR}\n")
 add_custom_target(list-backends
   COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/Backends/scripts/list_backends.py ${PROJECT_BINARY_DIR}/list_backends_data.txt
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -722,7 +722,7 @@ add_dependencies(list-backends backend_harvest)
 # scratch/build_time/scanbit_excluded_libs.yaml (written by ScannerBit) and
 # walks ScannerBit/src/scanners/ for the canonical native plugin list.
 file(WRITE "${PROJECT_BINARY_DIR}/list_scanners_data.txt"
-     "EXTERNAL_TARGETS=${GAMBIT_AVAILABLE_SCANNER_TARGETS}\nPYTHON_SCANNERS=${GAMBIT_PYTHON_SCANNER_STATUS}\n")
+     "EXTERNAL_TARGETS=${GAMBIT_AVAILABLE_SCANNER_TARGETS}\nPYTHON_SCANNERS=${GAMBIT_PYTHON_SCANNER_STATUS}\nBUILD_DIR=${PROJECT_BINARY_DIR}\n")
 add_custom_target(list-scanners
   COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/ScannerBit/scripts/list_scanners.py ${PROJECT_BINARY_DIR}/list_scanners_data.txt
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
