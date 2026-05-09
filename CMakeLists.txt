@@ -632,16 +632,11 @@ list(APPEND MODULE_HARVESTER_FILES "${PROJECT_SOURCE_DIR}/config/resolution_type
 set(MODULE_HARVESTER_FILES ${MODULE_HARVESTER_FILES} ${BACKEND_HARVESTER_FILES})
 remove_build_files(models_harvested backends_harvested modules_harvested printers_harvested colliders_harvested)
 
-# Add backends and scanners. (Done before the harvest custom-target
-# registration and update_cmakelists invocation below so that any late
-# additions to ${itch} from cmake/backends.cmake / cmake/scanners.cmake —
-# e.g. the FeynHiggs ditch for gfortran>=10 — are reflected in the
-# itch_with_commas string we pass to those steps. Otherwise the backend
-# harvester would still mark such backends "enabled" in
-# gambit_backend_interfaces.yaml even though no make targets exist to build them.)
+# Add backends and scanners. Done before the harvest registration so late
+# additions to ${itch} (e.g. the FeynHiggs gfortran>=10 ditch) reach the
+# harvester.
 include(cmake/externals.cmake)
 
-# Reprocess the ditch set into a comma-separated list (final, post-externals).
 string (REPLACE ";" "," itch_with_commas "${itch}")
 
 if(EXISTS "${PROJECT_SOURCE_DIR}/Elements/")
@@ -715,9 +710,8 @@ endif()
 # Print the list of backend make targets that survived the ditch / opt-in pass.
 gambit_print_available_backend_targets()
 
-# Register a `make list-backends` target that prints a status table of every
-# known backend, including which Bits use it. The data file is rewritten on
-# each cmake configure to reflect the current set of active targets.
+# `make list-backends` and `make list-scanners` status-table targets.
+# Each writes its data file on every cmake configure.
 file(WRITE "${PROJECT_BINARY_DIR}/list_backends_data.txt"
      "TARGETS=${GAMBIT_AVAILABLE_BACKEND_TARGETS}\nBUILD_DIR=${PROJECT_BINARY_DIR}\nDITCHED=${itch}\n")
 add_custom_target(list-backends
@@ -726,11 +720,6 @@ add_custom_target(list-backends
   USES_TERMINAL)
 add_dependencies(list-backends backend_harvest)
 
-# Register a `make list-scanners` target that prints an analogous status table
-# for scanner plugins (external, native, and Python). The data file is
-# rewritten on each cmake configure; the script also reads
-# scratch/build_time/scanbit_excluded_libs.yaml (written by ScannerBit) and
-# walks ScannerBit/src/scanners/ for the canonical native plugin list.
 file(WRITE "${PROJECT_BINARY_DIR}/list_scanners_data.txt"
      "EXTERNAL_TARGETS=${GAMBIT_AVAILABLE_SCANNER_TARGETS}\nPYTHON_SCANNERS=${GAMBIT_PYTHON_SCANNER_STATUS}\nBUILD_DIR=${PROJECT_BINARY_DIR}\n")
 add_custom_target(list-scanners

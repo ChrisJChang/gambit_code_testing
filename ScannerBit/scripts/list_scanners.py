@@ -1,20 +1,8 @@
 #!/usr/bin/env python3
-"""Print a status table of every known GAMBIT scanner plugin.
-
-Combines three data sources:
-  * the data file written by CMakeLists.txt at configure time (active external
-    scanner make targets and per-Python-scanner status), passed in argv[1];
-  * scratch/build_time/scanbit_excluded_libs.yaml (disabled native libs),
-    produced by ScannerBit/CMakeLists.txt;
-  * the scanner_plugin(name, version(...)) registrations under
-    ScannerBit/src/scanners/, which are the canonical list of native plugins.
-
-Prints one row per canonical plugin name. External plugins list their
-versioned make targets; native-only plugins are tagged 'native'; Python
-scanners are tagged 'python'.
-"""
-from __future__ import print_function
-
+"""Print a status table of every known GAMBIT scanner plugin (one row per
+canonical plugin name). Reads scratch/build_time/scanbit_excluded_libs.yaml
+plus a data file written by CMakeLists.txt at configure time, and walks
+ScannerBit/src/scanners/ for native scanner_plugin() registrations."""
 import io
 import os
 import re
@@ -25,6 +13,9 @@ import yaml
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.normpath(os.path.join(_HERE, "..", ".."))
+sys.path.insert(0, os.path.join(_REPO, "Utils", "scripts"))
+
+import list_table  # noqa: E402
 
 
 def parse_data_file(path):
@@ -43,10 +34,6 @@ def parse_data_file(path):
 
 
 def is_target_installed(build_dir, target):
-    """An ExternalProject_Add target writes a <target>-done stamp into its
-    stamp dir once configure/build/install all succeed. The stamp persists
-    across cmake reconfigures and is removed by the corresponding clean/nuke
-    targets, so it tracks reality."""
     if not build_dir or not target:
         return False
     stamp = os.path.join(build_dir, target + "-prefix", "src",
@@ -55,24 +42,19 @@ def is_target_installed(build_dir, target):
 
 
 def is_scanner_lib_built(libname):
-    """Return True if ScannerBit/lib/lib<libname>.so exists, i.e. the GAMBIT
-    runtime interface library for this scanner has been built. Independent
-    of any external dependency (libdiver.so etc.) that may also be required
-    — this is just the GAMBIT-side library that ScannerBit dlopens."""
     return os.path.exists(os.path.join(
         _REPO, "ScannerBit", "lib", "lib" + libname + ".so"))
 
 
 def parse_excluded_yaml(path):
-    """Return {libname: [reason, ...]} for every excluded library, where libname
-    is the bare library identifier (e.g. "scanner_great", "scanner_python")."""
+    """Return {libname: [reason, ...]} for every excluded scanner/objective
+    library in scanbit_excluded_libs.yaml."""
     excluded = {}
     if not os.path.exists(path):
         return excluded
     with io.open(path, "r") as f:
         data = yaml.safe_load(f) or {}
     for libfile, info in data.items():
-        # libfile looks like "libscanner_great.so" or "libobjective_python.so".
         name = libfile
         if name.startswith("lib"):
             name = name[3:]
@@ -81,9 +63,9 @@ def parse_excluded_yaml(path):
         raw_reasons = info.get("reason") or []
         if isinstance(raw_reasons, str):
             raw_reasons = [raw_reasons]
-        # Each reason was emitted by ScannerBit/CMakeLists.txt as a literal
-        # YAML sequence entry like '- file missing: "ROOT"', which the YAML
-        # parser turns into a single-key mapping. Flatten back to "key: value".
+        # ScannerBit emits each reason as a literal YAML entry like
+        # '- file missing: "ROOT"', which yaml.safe_load parses as a
+        # single-key mapping; flatten back to "key: value".
         reasons = []
         for r in raw_reasons:
             if isinstance(r, dict):
@@ -103,12 +85,9 @@ _PLUGIN_RE = re.compile(
 
 
 def parse_native_plugins(scanners_dir):
-    """Walk ScannerBit/src/scanners/<libdir>/*.cpp and collect every
-    scanner_plugin(name, version(...)) registration. Returns a list of dicts:
-    { 'libname': 'scanner_<libdir>', 'plugin': '<name>', 'version': '<v>' }.
-
-    Skips the python/ directory; Python scanners come from a separate data
-    source (cmake/python_scanners.cmake)."""
+    """Walk ScannerBit/src/scanners/<libdir>/* and return a list of
+    {libname, plugin, version} dicts derived from scanner_plugin(...)
+    registrations. Skips python/ — those come from a separate data source."""
     rows = []
     if not os.path.isdir(scanners_dir):
         return rows
@@ -144,18 +123,16 @@ def main():
     )
     native = parse_native_plugins(os.path.join(_REPO, "ScannerBit", "src", "scanners"))
 
-    # Map external make target to its companion plugin library, e.g.
-    # "diver_1.3.0" -> "scanner_diver_1.3.0". Most ScannerBit/src/scanners/
-    # subdirs include the version suffix, but a few (e.g. "great") do not, so
-    # also register a versionless fallback mapping ("scanner_great").
+    # Map "<target>" -> "scanner_<target>" plus a versionless fallback for
+    # canonical dirs that drop the version (e.g. ScannerBit/src/scanners/great).
+    # Versionless slot is first-seen wins, which is fine because in practice
+    # only one scanner family hits this fallback.
     target_for_lib = {}
     for tgt in external_targets:
         target_for_lib.setdefault("scanner_" + tgt, tgt)
         if "_" in tgt:
             target_for_lib.setdefault("scanner_" + tgt.rsplit("_", 1)[0], tgt)
 
-    # Group native+external plugins by canonical plugin name. Each entry is a
-    # list of per-version dicts, sorted by version.
     grouped = {}
     for r in native:
         libname = r["libname"]
@@ -168,34 +145,16 @@ def main():
             "reason":   "; ".join(excluded.get(libname, [])),
         })
 
-    use_color = sys.stdout.isatty()
-    YELLOW = "\033[33m" if use_color else ""
-    GREEN  = "\033[32m" if use_color else ""
-    CYAN   = "\033[36m" if use_color else ""
-    DIM    = "\033[2m"  if use_color else ""
-    RESET  = "\033[0m"  if use_color else ""
+    # [installed] = ready to run: external scanners need both the
+    # ExternalProject build and libscanner_<x>.so; native scanners need
+    # only the latter.
+    def _ver_key(v):
+        return [int(c) if c.isdigit() else c
+                for c in re.split('([0-9]+)', v["version"])]
 
-    # Status column tags: width 15 to fit the longest visible label
-    # ("[not installed]"). ANSI color codes don't take visible width.
-    TAG_W = len("[not installed]")
-    def make_tag(label, color):
-        if not label:
-            return " " * TAG_W
-        return color + label + RESET + " " * (TAG_W - len(label))
-
-    # Build (name, status_kind, info-string) tuples for the grouped
-    # (native+external) section. The Status column answers "is this
-    # scanner ready to run right now?" — so [installed] requires every
-    # prerequisite to be in place: for an external scanner that means
-    # both the ExternalProject build (so libdiver.so etc. exists) and
-    # ScannerBit's own runtime interface library (libscanner_<x>.so);
-    # for a native scanner it just means the latter.
-    #   "disabled"      — every version is excluded
-    #   "installed"     — at least one version is fully ready to run
-    #   "not_installed" — none ready, but user actions can fix it
     grouped_rows = []
     for name in sorted(grouped, key=str.lower):
-        versions = sorted(grouped[name], key=lambda v: v["version"])
+        versions = sorted(grouped[name], key=_ver_key)
         all_disabled = all(v["disabled"] for v in versions)
         external_versions = [v for v in versions if v["target"]]
         native_versions   = [v for v in versions if not v["target"]]
@@ -221,7 +180,7 @@ def main():
                     tgt_strs.append(v["target"])
             parts.append("targets: " + ", ".join(tgt_strs))
         if native_versions and not external_versions:
-            parts.append("targets: " + DIM + "none; native GAMBIT scanner" + RESET)
+            parts.append("targets: " + list_table.DIM + "none; native GAMBIT scanner" + list_table.RESET)
         info = "  ".join(parts)
 
         any_ready = any(is_version_ready(v) for v in versions)
@@ -247,10 +206,6 @@ def main():
         pstatus = parts[1]
         # Restore "+" → ", " in the missing-pkgs field (see python_scanners.cmake).
         pmissing = parts[2].replace("+", ", ") if len(parts) > 2 else ""
-        # "Ready to run" requires libscanner_python.so to exist and the
-        # required pip packages to be installed; "disabled" means the
-        # configure-time decision was that this scanner can't be built or
-        # used at all (libscanner_python excluded, or pip pkgs missing).
         if py_lib_disabled or pstatus != "enabled":
             kind = "disabled"
         elif py_lib_built:
@@ -259,45 +214,27 @@ def main():
             kind = "not_installed"
         python_rows.append((pname, kind, pmissing))
 
-    # Compute column widths across both sections so they line up.
     all_names = [r[0] for r in grouped_rows] + [r[0] for r in python_rows]
     if not all_names:
         print("  (no scanner plugins found)")
         return
     name_w = max(max(len(n) for n in all_names), len("Scanner"))
 
-    # Header row + dashed separator.
-    BOLD = "\033[1m" if use_color else ""
     print("  {bold}{h1:<{nw}}  {h2:<{tw}}  {h3}{reset}".format(
-        bold=BOLD, reset=RESET,
+        bold=list_table.BOLD, reset=list_table.RESET,
         h1="Scanner", nw=name_w,
-        h2="Status", tw=TAG_W,
+        h2="Status", tw=list_table.TAG_W,
         h3="Make targets"))
     print("  {0}  {1}  {2}".format(
-        "-" * name_w, "-" * TAG_W, "-" * len("Make targets")))
-
-    tag_color = {
-        "disabled":      YELLOW,
-        "installed":     GREEN,
-        "not_installed": CYAN,
-        "":              "",
-    }
-    tag_label = {
-        "disabled":      "[disabled]",
-        "installed":     "[installed]",
-        "not_installed": "[not installed]",
-        "":              "",
-    }
+        "-" * name_w, "-" * list_table.TAG_W, "-" * len("Make targets")))
 
     # Print grouped (native+external) rows.
     for name, kind, info in grouped_rows:
-        tag = make_tag(tag_label[kind], tag_color[kind])
         print("  {n:<{nw}}  {tag}  {info}".format(
-            n=name, nw=name_w, tag=tag, info=info))
+            n=name, nw=name_w, tag=list_table.tag_for_kind(kind), info=info))
 
     # Print Python rows (sorted alphabetically for parity with the grouped section).
     for name, kind, missing in sorted(python_rows, key=lambda r: r[0].lower()):
-        tag = make_tag(tag_label[kind], tag_color[kind])
         if kind == "disabled":
             if missing:
                 body = "none; python plugin – install package(s) [{}] to enable".format(missing)
@@ -305,9 +242,9 @@ def main():
                 body = "none; python plugin – install package(s) to enable"
         else:
             body = "none; python plugin"
-        info = "targets: " + DIM + body + RESET
+        info = "targets: " + list_table.DIM + body + list_table.RESET
         print("  {n:<{nw}}  {tag}  {info}".format(
-            n=name, nw=name_w, tag=tag, info=info))
+            n=name, nw=name_w, tag=list_table.tag_for_kind(kind), info=info))
 
 
 if __name__ == "__main__":
