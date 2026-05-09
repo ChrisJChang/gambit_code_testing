@@ -196,7 +196,17 @@ def main():
     if not all_names:
         print("  (no scanner plugins found)")
         return
-    name_w = max(len(n) for n in all_names)
+    name_w = max(max(len(n) for n in all_names), len("Name"))
+
+    # Header row + dashed separator.
+    BOLD = "\033[1m" if use_color else ""
+    print("  {bold}{h1:<{nw}}  {h2:<10}  {h3}{reset}".format(
+        bold=BOLD, reset=RESET,
+        h1="Name", nw=name_w,
+        h2="Status",
+        h3="Make targets"))
+    print("  {0}  {1}  {2}".format(
+        "-" * name_w, "-" * 10, "-" * len("Make targets")))
 
     # Print grouped (native+external) rows.
     for name, all_disabled, partial, info in grouped_rows:

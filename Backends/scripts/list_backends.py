@@ -64,10 +64,26 @@ def main():
         rows.append((canonical, active, bits, targets))
 
     name_w = max(len(r[0]) for r in rows)
+    name_w = max(name_w, len("Name"))
     bits_w = max(len(", ".join(r[2]) if r[2] else "(none)") for r in rows)
+    # "used by: " column spans the literal prefix (9 chars) plus the padded
+    # bits string. Bump to fit the "Used by Bits" header if narrower.
+    used_by_col_w = max(9 + bits_w, len("Used by Bits"))
+    bits_w = used_by_col_w - 9
     use_color = sys.stdout.isatty()
     YELLOW = "\033[33m" if use_color else ""
+    BOLD   = "\033[1m" if use_color else ""
     RESET  = "\033[0m" if use_color else ""
+
+    # Header row + dashed separator.
+    print("  {bold}{h1:<{nw}}  {h2:<10}  {h3:<{w3}}  {h4}{reset}".format(
+        bold=BOLD, reset=RESET,
+        h1="Name",   nw=name_w,
+        h2="Status",
+        h3="Used by Bits", w3=used_by_col_w,
+        h4="Make targets"))
+    print("  {0}  {1}  {2}  {3}".format(
+        "-" * name_w, "-" * 10, "-" * used_by_col_w, "-" * len("Make targets")))
 
     for name, active, bits, targets in rows:
         bits_str    = ", ".join(bits)    if bits    else "(none)"
