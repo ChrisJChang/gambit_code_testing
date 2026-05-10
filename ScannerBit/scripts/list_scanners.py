@@ -145,9 +145,9 @@ def main():
             "reason":   "; ".join(excluded.get(libname, [])),
         })
 
-    # [installed] = ready to run: external scanners need both the
-    # ExternalProject build and libscanner_<x>.so; native scanners need
-    # only the latter.
+    # [installed] = the user's build action for this scanner kind has
+    # completed: external scanners → ExternalProject stamp present;
+    # native scanners → libscanner_<x>.so built.
     def _ver_key(v):
         return [int(c) if c.isdigit() else c
                 for c in re.split('([0-9]+)', v["version"])]
@@ -162,11 +162,17 @@ def main():
         def is_version_ready(v):
             if v["disabled"]:
                 return False
-            if not is_scanner_lib_built(v["library"]):
-                return False
-            if v["target"] and not is_target_installed(build_dir, v["target"]):
-                return False
-            return True
+            if v["target"]:
+                return is_target_installed(build_dir, v["target"])
+            return is_scanner_lib_built(v["library"])
+
+        any_ready = any(is_version_ready(v) for v in versions)
+        if all_disabled:
+            kind = "disabled"
+        elif any_ready:
+            kind = "installed"
+        else:
+            kind = "not_installed"
 
         parts = []
         if external_versions:
@@ -180,16 +186,12 @@ def main():
                     tgt_strs.append(v["target"])
             parts.append("targets: " + ", ".join(tgt_strs))
         if native_versions and not external_versions:
-            parts.append("targets: " + list_table.DIM + "none; native GAMBIT scanner" + list_table.RESET)
+            body = "none; native GAMBIT scanner"
+            if kind == "not_installed":
+                body += " – build GAMBIT to install"
+            parts.append("targets: " + list_table.DIM + body + list_table.RESET)
         info = "  ".join(parts)
 
-        any_ready = any(is_version_ready(v) for v in versions)
-        if all_disabled:
-            kind = "disabled"
-        elif any_ready:
-            kind = "installed"
-        else:
-            kind = "not_installed"
         grouped_rows.append((name, kind, info))
 
     # Python rows: one per scanner. Status is libscanner_python lib status (if
@@ -240,6 +242,8 @@ def main():
                 body = "none; python plugin – install package(s) [{}] to enable".format(missing)
             else:
                 body = "none; python plugin – install package(s) to enable"
+        elif kind == "not_installed":
+            body = "none; python plugin – all packages available, build GAMBIT to install"
         else:
             body = "none; python plugin"
         info = "targets: " + list_table.DIM + body + list_table.RESET
