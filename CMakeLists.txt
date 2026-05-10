@@ -707,9 +707,6 @@ if(EXISTS "${PROJECT_SOURCE_DIR}/ScannerBit/")
   include(${PROJECT_BINARY_DIR}/linkedout.cmake)
 endif()
 
-# Print the list of backend make targets that survived the ditch / opt-in pass.
-gambit_print_available_backend_targets()
-
 # `make list-backends` and `make list-scanners` status-table targets.
 # Each writes its data file on every cmake configure.
 file(WRITE "${PROJECT_BINARY_DIR}/list_backends_data.txt"
@@ -726,3 +723,6 @@ add_custom_target(list-scanners
   COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/ScannerBit/scripts/list_scanners.py ${PROJECT_BINARY_DIR}/list_scanners_data.txt
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   USES_TERMINAL)
+
+message("${BoldYellow}-- Run `make list-backends` to see the available backend make targets.${ColourReset}")
+message("${BoldYellow}-- Run `make list-scanners` to see the available scanner make targets.${ColourReset}")

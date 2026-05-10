@@ -158,7 +158,7 @@ macro(add_extra_targets type package ver dir dl target)
 
   endif()
 
-  # Track available backend make targets for gambit_print_available_backend_targets.
+  # Track available backend make targets for the list-backends helper.
   if (${type} STREQUAL "backend")
     list(APPEND GAMBIT_AVAILABLE_BACKEND_TARGETS "${package}_${ver}")
   elseif (${type} STREQUAL "backend model")

@@ -955,15 +955,3 @@ function(gambit_configure_optin_build)
   set(BACKEND_HARVESTER_EXTRA_ARGS "${_extra_args}" PARENT_SCOPE)
   set(update_cmakelists_extra_args "${_extra_args}" PARENT_SCOPE)
 endfunction()
-
-
-# Function to print the comma-separated list of backend make targets that
-# survived the ditch / opt-in pass. The list is populated as a side-effect
-# of add_extra_targets in cmake/externals.cmake, so call this after
-# cmake/externals.cmake has been included.
-function(gambit_print_available_backend_targets)
-  set(_targets "${GAMBIT_AVAILABLE_BACKEND_TARGETS}")
-  list(SORT _targets)
-  string(REPLACE ";" ", " _targets_csv "${_targets}")
-  message("${BoldYellow}-- Available backend make targets: ${_targets_csv}${ColourReset}")
-endfunction()
