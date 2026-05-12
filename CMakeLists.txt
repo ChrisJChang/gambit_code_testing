@@ -701,6 +701,31 @@ foreach(bit ${GAMBIT_BITS})
   add_dependencies(${bit} contrib)
 endforeach()
 
+# Apply precompiled headers to all GAMBIT module (*Bit) OBJECT targets.
+# gambit_module_headers.hpp is the single entry-point header for module source
+# files; it is included in the large majority of source files across DarkBit,
+# CosmoBit, SpecBit, FlavBit, etc.  Precompiling it (along with the STL headers
+# it drags in) avoids re-parsing ~1500 lines of GAMBIT infrastructure on every
+# translation unit.  Requires CMake >= 3.16 (target_precompile_headers).
+# Note: ColliderBit analysis files (~90 of 104 sources) do not include
+# gambit_module_headers.hpp; those files bear a small force-include overhead
+# that is outweighed by the benefit across the other bits.
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
+  foreach(bit ${GAMBIT_BITS})
+    target_precompile_headers(${bit} PRIVATE
+      <string>
+      <vector>
+      <iostream>
+      <cmath>
+      <algorithm>
+      <memory>
+      <map>
+      <sstream>
+      "gambit/Elements/gambit_module_headers.hpp"
+    )
+  endforeach()
+endif()
+
 # Make the collider_harvest step a dependency of ColliderBit
 if(";${GAMBIT_BITS};" MATCHES ";ColliderBit;")
   add_dependencies(ColliderBit collider_harvest)

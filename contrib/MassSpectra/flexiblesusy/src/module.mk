@@ -177,8 +177,28 @@ LIBFLEXI     := $(DIR)/libflexisusy$(MODULE_LIBEXT)
 
 LIBFLEXI_INSTALL_DIR := $(INSTALL_DIR)/$(DIR)
 
+# Precompiled header for the FlexibleSUSY core library.
+# wrappers.hpp is included by 788 source files across src/ and models/ and
+# itself pulls in <Eigen/Core>, <boost/lexical_cast.hpp>, and all common STL
+# headers.  Compiling it once to a .gch eliminates the most expensive repeated
+# parse in the entire FlexibleSUSY build.
+#
+# The PCH is compiled with the same CPPFLAGS used for LIBFLEXI_OBJ so that GCC
+# accepts it automatically when it encounters #include "wrappers.hpp".  Model
+# object files compiled under the same flags (EIGENFLAGS, BOOSTFLAGS, etc.)
+# will also pick up the PCH transparently; an order-only dep in config/Makefile.in
+# ensures it exists before any library is assembled.
+LIBFLEXI_PCH := $(DIR)/wrappers.hpp.gch
+
+$(LIBFLEXI_PCH): $(DIR)/wrappers.hpp
+		$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(GSLFLAGS) $(EIGENFLAGS) $(BOOSTFLAGS) $(SQLITEFLAGS) $(TSILFLAGS) -x c++-header -o $@ $<
+
+# src/ objects must wait for the PCH so the first build benefits immediately.
+$(LIBFLEXI_OBJ): | $(LIBFLEXI_PCH)
+
 .PHONY:         all-$(MODNAME) clean-$(MODNAME) clean-$(MODNAME)-dep \
-		clean-$(MODNAME)-lib clean-$(MODNAME)-obj distclean-$(MODNAME)
+		clean-$(MODNAME)-lib clean-$(MODNAME)-obj clean-$(MODNAME)-pch \
+		distclean-$(MODNAME)
 
 all-$(MODNAME): $(LIBFLEXI)
 		@true
@@ -200,7 +220,11 @@ clean-$(MODNAME)-lib:
 clean-$(MODNAME)-obj:
 		-rm -f $(LIBFLEXI_OBJ)
 
-clean-$(MODNAME): clean-$(MODNAME)-dep clean-$(MODNAME)-lib clean-$(MODNAME)-obj
+clean-$(MODNAME)-pch:
+		-rm -f $(LIBFLEXI_PCH)
+
+clean-$(MODNAME): clean-$(MODNAME)-dep clean-$(MODNAME)-lib clean-$(MODNAME)-obj \
+		clean-$(MODNAME)-pch
 		@true
 
 distclean-$(MODNAME): clean-$(MODNAME)

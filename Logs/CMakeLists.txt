@@ -32,3 +32,17 @@ set(header_files include/gambit/Logs/log_tags.hpp
 )
 
 add_gambit_library(Logs OPTION OBJECT SOURCES ${source_files} HEADERS ${header_files})
+
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
+  target_precompile_headers(Logs PRIVATE
+    <string>
+    <vector>
+    <iostream>
+    <sstream>
+    <fstream>
+    <cmath>
+    <algorithm>
+    <memory>
+    <map>
+  )
+endif()

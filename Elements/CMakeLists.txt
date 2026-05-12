@@ -77,3 +77,17 @@ set(header_files include/gambit/Elements/decay_table.hpp
 )
 
 add_gambit_library(Elements OPTION OBJECT SOURCES ${source_files} HEADERS ${header_files})
+
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
+  target_precompile_headers(Elements PRIVATE
+    <string>
+    <vector>
+    <iostream>
+    <sstream>
+    <fstream>
+    <cmath>
+    <algorithm>
+    <memory>
+    <map>
+  )
+endif()

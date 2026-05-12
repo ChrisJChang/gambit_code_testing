@@ -184,7 +184,10 @@ endif
 
 allsrc:   $(ALLSRC)
 allexec:  $(ALLEXE)
-alllib:   $(ALLLIB)
+# Order-only dependency on the wrappers.hpp PCH: GNU Make builds the PCH before
+# starting on any library target, so model .o files compiled in parallel also
+# find the .gch in src/ and skip re-parsing wrappers.hpp + <Eigen/Core>.
+alllib:   $(ALLLIB) | src/wrappers.hpp.gch
 allll:    $(ALLLL)
 alltest:  $(ALLTST)
 
@@ -217,6 +220,7 @@ distclean::
 	-rm -f $(FSCONFIG)
 	-rm -f $(SARAH_DEP_GEN)
 	-rm -f config.boost config.log config.math config.sarah config.status
+	-rm -f src/wrappers.hpp.gch
 
 librarylink: allll
 	@true

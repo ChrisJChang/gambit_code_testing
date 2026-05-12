@@ -100,3 +100,19 @@ set(header_files include/gambit/Utils/ascii_table_reader.hpp
 )
 
 add_gambit_library(Utils OPTION OBJECT SOURCES ${source_files} HEADERS ${header_files})
+
+# Precompile the STL headers that appear across nearly every Utils source file,
+# avoiding repeated parsing of <string>, <vector>, etc. per translation unit.
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
+  target_precompile_headers(Utils PRIVATE
+    <string>
+    <vector>
+    <iostream>
+    <sstream>
+    <fstream>
+    <cmath>
+    <algorithm>
+    <memory>
+    <map>
+  )
+endif()

@@ -57,3 +57,17 @@ set(header_files include/gambit/Core/container_factory.hpp
 
 add_gambit_library(Core OPTION OBJECT SOURCES ${source_files} HEADERS ${header_files})
 add_dependencies(Core module_harvest)
+
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
+  target_precompile_headers(Core PRIVATE
+    <string>
+    <vector>
+    <iostream>
+    <sstream>
+    <fstream>
+    <cmath>
+    <algorithm>
+    <memory>
+    <map>
+  )
+endif()
