@@ -680,7 +680,8 @@ set(smoking_CXX_FLAGS "${BACKEND_CXX_FLAGS}")
 check_ditch_status(${name} ${ver} ${dir})
 if(NOT ditched_${name}_${ver})
   ExternalProject_Add(${name}_${ver}
-    DOWNLOAD_COMMAND ${DL_BACKEND} ${dl} ${md5} ${dir} ${name} ${ver}
+    DOWNLOAD_COMMAND echo "WARNING: This is a WIP backend until Smoking is publicly released. Please provide a tarball to use this backend. Look forward to updates from the Oslo group :)" && ${DL_BACKEND} ${dl} ${md5} ${dir} ${name} ${ver} # TODO: Delete this line when smoking is publicly released
+    #DOWNLOAD_COMMAND ${DL_BACKEND} ${dl} ${md5} ${dir} ${name} ${ver}
     SOURCE_DIR ${dir}
     PATCH_COMMAND ""
     CMAKE_ARGS
