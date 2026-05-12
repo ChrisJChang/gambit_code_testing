@@ -721,7 +721,7 @@ if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
       <memory>
       <map>
       <sstream>
-      "gambit/Elements/gambit_module_headers.hpp"
+      "${PROJECT_SOURCE_DIR}/Elements/include/gambit/Elements/gambit_module_headers.hpp"
     )
   endforeach()
 endif()
