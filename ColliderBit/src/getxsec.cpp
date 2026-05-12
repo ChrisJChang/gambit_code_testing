@@ -1923,7 +1923,15 @@ namespace Gambit
     result = initial_xsec.first[collider]; 
   }
 
-  // TODO: Same but for process xsecs
+  // Same but for process xsecs
+  void useInitialProcessCrossSectionsMapasFinal(map_int_process_xsec& result)
+  {
+    using namespace Pipes::useInitialProcessCrossSectionsMapasFinal;
+    std::string collider = Dep::RunMC->current_collider();
+
+    map_str_map_int_process_xsec initial_process_xsecs = *Dep::InitialProcessCrossSections;
+    result = initial_process_xsecs[collider]; 
+  }
   
   }
 }
