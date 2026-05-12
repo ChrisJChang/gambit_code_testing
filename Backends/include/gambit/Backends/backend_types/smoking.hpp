@@ -15,7 +15,6 @@
 ///  Authors (add name and date if you modify):
 ///
 ///  \author Christopher Chang
-///          (christopher.chang@uqconnect.edu.au)
 ///  \date 2026 Apr
 ///
 ///  *********************************************
