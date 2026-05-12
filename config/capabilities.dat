@@ -397,10 +397,6 @@ SPheno_internal: |
 #  ColliderBit capabilities
 #-------------------------------------
 
-RunSmoking: |
-   Run the smoking NLO+NLL hadronic cross-section calculation (init, calculate,
-   finalise) with default settings.
-
 DummyColliderObservable: |
    Dummy observable that creates a dependency on TestModel1D, which is used
    to satisfy the normal GAMBIT model requrements in a minimal way. Used
