@@ -20,7 +20,7 @@
 #
 #  **************************************
 
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16.3 FATAL_ERROR)
 project(GUM)
 message("   Building GUM in ${CMAKE_CURRENT_SOURCE_DIR}")
 include(ExternalProject)
@@ -40,13 +40,6 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   set(dashi "-i ''")
 else()
   set(dashi "-i")
-endif()
-
-# Set a consistent MACOSX_RPATH default across all CMake versions.
-# When CMake 2.8.12 is required, change this default to 1.
-# When CMake 3.0.0 is required, remove this block (see CMP0042).
-if(NOT DEFINED CMAKE_MACOSX_RPATH)
-  set(CMAKE_MACOSX_RPATH 0)
 endif()
 
 # Check for Mathematica

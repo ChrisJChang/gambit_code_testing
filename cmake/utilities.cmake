@@ -187,11 +187,7 @@ endfunction()
 
 # Function to make symbols visible for a code component
 function(make_symbols_visible lib)
-  if(${CMAKE_MAJOR_VERSION} MATCHES "2")
-    set_target_properties(${lib} PROPERTIES COMPILE_OPTIONS "-fvisibility=default")
-  else()
-    set_target_properties(${lib} PROPERTIES CXX_VISIBILITY_PRESET default)
-  endif()
+  set_target_properties(${lib} PROPERTIES CXX_VISIBILITY_PRESET default)
 endfunction()
 
 # Function to reset the install_name of a library compiled in an external project on OSX
@@ -218,15 +214,9 @@ function(add_gambit_library libraryname)
   add_dependencies(${libraryname} module_harvest)
   add_dependencies(${libraryname} yaml-cpp)
 
-  if(${CMAKE_VERSION} VERSION_GREATER 2.8.10)
-    foreach (dir ${GAMBIT_INCDIRS})
-      target_include_directories(${libraryname} PUBLIC ${dir})
-    endforeach()
-  else()
-    foreach (dir ${GAMBIT_INCDIRS})
-      include_directories(${dir})
-    endforeach()
-  endif()
+  foreach (dir ${GAMBIT_INCDIRS})
+    target_include_directories(${libraryname} PUBLIC ${dir})
+  endforeach()
 
   if(${ARG_OPTION} STREQUAL SHARED AND APPLE)
     set_property(TARGET ${libraryname} PROPERTY SUFFIX .so)
@@ -318,16 +308,10 @@ function(add_gambit_executable executablename LIBRARIES)
     ENABLE_EXPORTS TRUE
   )
 
-  if(${CMAKE_VERSION} VERSION_GREATER 2.8.10)
-    foreach (dir ${GAMBIT_INCDIRS})
-      target_include_directories(${executablename} PUBLIC ${dir})
-    endforeach()
-  else()
-    foreach (dir ${GAMBIT_INCDIRS})
-      include_directories(${dir})
-    endforeach()
-  endif()
-
+  foreach (dir ${GAMBIT_INCDIRS})
+    target_include_directories(${executablename} PUBLIC ${dir})
+  endforeach()
+  
   if(MPI_CXX_FOUND)
     set(LIBRARIES ${LIBRARIES} ${MPI_CXX_LIBRARIES})
     if(MPI_CXX_LINK_FLAGS)
