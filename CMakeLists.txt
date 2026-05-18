@@ -523,6 +523,24 @@ set(BACKEND_GNU99_FLAGS "${BACKEND_C_FLAGS} -std=gnu99")
 # Should we use pragmas to suppress common compiler warnings from external libraries?
 option(SUPPRESS_LIBRARY_WARNINGS "Suppress common compiler warnings due to external libraries" ON)
 
+# Unity build option: merges source files into batches so headers are parsed once per batch
+# rather than once per file.  Reduces compilation time when header parsing dominates.
+# Risk: anonymous namespaces and file-scope statics become mutually visible within a batch,
+# which surfaces as ODR errors at compile time (not silent bugs) and can be fixed with
+# SKIP_UNITY_BUILD_INCLUSION on the offending source files.
+option(GAMBIT_UNITY_BUILD "Enable unity (jumbo) builds to reduce header parsing overhead" OFF)
+set(GAMBIT_UNITY_BUILD_BATCH_SIZE "8" CACHE STRING "Source files per unity build batch (GAMBIT_UNITY_BUILD=ON only)")
+if(GAMBIT_UNITY_BUILD)
+  if(CMAKE_VERSION VERSION_LESS 3.16)
+    message(WARNING "GAMBIT_UNITY_BUILD requires CMake >= 3.16; option ignored.")
+    set(GAMBIT_UNITY_BUILD OFF)
+  else()
+    message("${BoldYellow}   Unity build enabled with batch size ${GAMBIT_UNITY_BUILD_BATCH_SIZE}.${ColourReset}")
+    message("${BoldYellow}   If ODR errors appear, exclude the offending file with:${ColourReset}")
+    message("${BoldYellow}     set_source_files_properties(file.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)${ColourReset}")
+  endif()
+endif()
+
 # Unless "-rdynamic" or "-Wl,--export-dynamic" is set, make symbols hidden by default when compiling GAMBIT source files only
 string(FIND ${CMAKE_CXX_FLAGS} "-rdynamic" FOUND_RDYNAMIC_CXX)
 string(FIND ${CMAKE_CXX_FLAGS} "--export-dynamic" FOUND_EXPORT_DYNAMIC_CXX)
@@ -688,6 +706,18 @@ add_subdirectory_if_present(Backends)
 add_subdirectory_if_present(Elements)
 add_subdirectory_if_present(Printers)
 
+# Apply unity build to infrastructure OBJECT targets.
+if(GAMBIT_UNITY_BUILD)
+  foreach(_ub_target Logs Utils Core Models Backends Elements Printers)
+    if(TARGET ${_ub_target})
+      set_target_properties(${_ub_target} PROPERTIES
+        UNITY_BUILD ON
+        UNITY_BUILD_BATCH_SIZE ${GAMBIT_UNITY_BUILD_BATCH_SIZE}
+      )
+    endif()
+  endforeach()
+endif()
+
 # Lists of different GAMBIT object files to link
 set(GAMBIT_BASIC_COMMON_OBJECTS "${GAMBIT_BASIC_COMMON_OBJECTS}" $<TARGET_OBJECTS:Logs> $<TARGET_OBJECTS:Utils>)
 set(GAMBIT_ALL_COMMON_OBJECTS "${GAMBIT_BASIC_COMMON_OBJECTS}" $<TARGET_OBJECTS:Models> $<TARGET_OBJECTS:Backends> $<TARGET_OBJECTS:Elements> $<TARGET_OBJECTS:Printers>)
@@ -699,6 +729,13 @@ foreach(bit ${GAMBIT_BITS})
 
   # Add the dependency on the contrib target
   add_dependencies(${bit} contrib)
+
+  if(GAMBIT_UNITY_BUILD)
+    set_target_properties(${bit} PROPERTIES
+      UNITY_BUILD ON
+      UNITY_BUILD_BATCH_SIZE ${GAMBIT_UNITY_BUILD_BATCH_SIZE}
+    )
+  endif()
 endforeach()
 
 # Make the collider_harvest step a dependency of ColliderBit
