@@ -22,6 +22,7 @@
 #include "gambit/Elements/standalone_module.hpp"
 #include "gambit/Utils/util_functions.hpp"
 #include "gambit/NeutrinoBit/NeutrinoBit_rollcall.hpp"
+#include "gambit/Backends/backend_initialiser.hpp"
 
 //#define NEUTRINOBIT_STANDALONE_WIMP_DEBUG
 
@@ -60,6 +61,9 @@ int main(int argc, char *argv[])
     initialise_standalone_logs("runs/NeutrinoBit_standalone/logs/");
     logger()<<"Running NeutrinoBit standalone example"<<LogTags::info<<EOM;
     model_warning().set_fatal(true);
+
+    // Load all backend libraries, resolve symbols, and register functors.
+    Gambit::Backends::initialise_all();
 
     // Initialise settings for printer (required)
     YAML::Node printerNode = get_standalone_printer("cout", "runs/NeutrinoBit_standalone/logs/","");

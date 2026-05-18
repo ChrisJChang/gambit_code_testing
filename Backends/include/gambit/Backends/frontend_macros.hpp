@@ -70,10 +70,10 @@ namespace Gambit                                                            \
     {                                                                       \
       extern std::vector<str> allowed_models;                               \
       /* Make backend path easily available to convenience functions. */    \
-      extern const str backendDir;                                          \
+      extern str backendDir;                                                \
       /* Make an easy reference to the actual backend module if it is a */  \
       /* Python backend. */                                                 \
-      IF_USING_PYBIND11(extern pybind11::module& BACKENDNAME;)              \
+      IF_USING_PYBIND11(extern pybind11::module* CAT(BACKENDNAME,_module_ptr);)              \
     }                                                                       \
   }                                                                         \
 }                                                                           \
@@ -95,7 +95,7 @@ namespace Gambit                                                              \
       /* Choose the type to define the variable pointer */                    \
       typedef MATH_TYPE(TYPE) NAME##_type;                                    \
       /* Set the variable pointer and the getptr function. */                 \
-      extern NAME##_type* const NAME;                                         \
+      extern NAME##_type* NAME;                                         \
     }                                                                         \
   }                                                                           \
                                                                               \
@@ -139,7 +139,7 @@ namespace Gambit                                                                
       /* Define a type NAME_type to be a suitable function pointer. */                          \
       typedef TYPE (*NAME##_type) CONVERT_VARIADIC_ARG(ARGLIST);                                \
       /* Get the pointer to the function in the shared library. */                              \
-      extern const NAME##_type NAME;                                                            \
+      extern NAME##_type NAME;                                                            \
     }                                                                                           \
   }                                                                                             \
                                                                                                 \

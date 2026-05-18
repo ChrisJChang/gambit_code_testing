@@ -18,6 +18,7 @@
 #include "gambit/Core/gambit.hpp"
 #include "gambit/Utils/mpiwrapper.hpp"
 #include "gambit/Utils/file_lock.hpp"
+#include "gambit/Backends/backend_initialiser.hpp"
 
 
 using namespace Gambit;
@@ -112,6 +113,10 @@ int main(int argc, char* argv[])
       // Parse command line arguments, launching into the appropriate diagnostic mode
       // if the argument passed warrants it. Otherwise just get the filename.
       const str filename = Core().run_diagnostic(argc,argv);
+
+      // Load all backend libraries, resolve symbols, and register functors.
+      // Must happen before accountForMissingClasses() and DependencyResolver.
+      Backends::initialise_all();
 
       if (rank == 0)
       {

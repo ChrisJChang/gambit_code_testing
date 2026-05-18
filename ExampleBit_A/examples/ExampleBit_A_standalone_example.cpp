@@ -23,6 +23,7 @@
 
 // Only needed here
 #include "gambit/Utils/util_functions.hpp"
+#include "gambit/Backends/backend_initialiser.hpp"
 
 using namespace ExampleBit_A::Functown;     // Functors wrapping the module's actual module functions
 using namespace BackendIniBit::Functown;    // Functors wrapping the backend initialisation functions
@@ -53,6 +54,9 @@ int main()
 
     //Initialise logging (just comment out if you want no logfiles)
     initialise_standalone_logs("runs/ExampleBit_A_standalone/logs/");
+
+    // Load all backend libraries, resolve symbols, and register functors.
+    Gambit::Backends::initialise_all();
 
     // Initialise settings for printer (required)
     YAML::Node printerNode = get_standalone_printer("hdf5", "runs/ExampleBit_A_standalone/samples/", "ExampleBit_A_standalone.hdf5");

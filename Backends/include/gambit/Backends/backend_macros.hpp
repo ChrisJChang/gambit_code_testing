@@ -55,6 +55,7 @@
 #include "gambit/Backends/ini_functions.hpp"
 #include "gambit/Backends/common_macros.hpp"
 #include "gambit/Backends/interoperability.hpp"
+#include "gambit/Backends/backend_initialiser.hpp"
 #ifndef STANDALONE
   #include "gambit/Core/ini_functions.hpp"
 #endif
@@ -107,10 +108,12 @@ END_BE_NAMESPACE                                                            \
 CORE_ALLOWED_MODEL(BackendIniBit,CAT_4(BACKENDNAME,_,SAFE_VERSION,_init),   \
  MODEL, NOT_MODEL)                                                          \
 
-/// Set all the allowed models for a given backend functor.
+/// Set all the allowed models for a given backend functor (deferred until initialise_all()).
 #define SET_ALLOWED_MODELS(NAME, MODELS)                                    \
-int CAT(allowed_models_set_,NAME) =                                         \
- set_allowed_models(Functown::NAME, allowed_models, STRINGIFY(MODELS));
+namespace { int CAT(__allowed_models_init_,NAME) =                          \
+ ::Gambit::Backends::register_backend_initialiser([](){                     \
+   set_allowed_models(Functown::NAME, allowed_models, STRINGIFY(MODELS));   \
+ }); }
 
 /// Make the inUse pipe for a given backend functor.
 #define MAKE_INUSE_POINTER(NAME)                                            \
@@ -137,27 +140,35 @@ namespace Gambit                                                            \
   {                                                                         \
     namespace CAT_3(BACKENDNAME,_,SAFE_VERSION)                             \
     {                                                                       \
+      /* allowed_models stays at static-init time: BE_ALLOW_MODEL pushes */ \
+      /* to it at static-init, before initialise_all() is called.        */ \
       std::vector<str> allowed_models;                                      \
                                                                             \
-      /* Load the library */                                                \
-      int load = backendInfo().loadLibrary(STRINGIFY(BACKENDNAME),          \
-                 STRINGIFY(VERSION), STRINGIFY(SAFE_VERSION),               \
-                 DO_CLASSLOADING, STRINGIFY(BACKENDLANG));                  \
+      /* backendDir is set inside the deferred callable below.           */ \
+      str backendDir;                                                        \
                                                                             \
-      /* Register this backend with the Core if not running in standalone */\
-      REGISTER_BACKEND(BACKENDNAME, VERSION, SAFE_VERSION, REFERENCE)       \
+      /* Python module pointer set inside the deferred callable below.   */ \
+      IF_USING_PYBIND11(pybind11::module* CAT(BACKENDNAME,_module_ptr)      \
+       = nullptr;)                                                          \
                                                                             \
-      /* Register a LogTag for this backend with the logging system */      \
-      int reg_log = register_backend_with_log(STRINGIFY(BACKENDNAME));      \
-                                                                            \
-      /* Make backend path easily available to convenience functions. */    \
-      extern const str backendDir = backendInfo().                          \
-       path_dir(STRINGIFY(BACKENDNAME), STRINGIFY(VERSION));                \
-                                                                            \
-      /* Make an easy reference to the actual backend module if it is a */  \
-      /* Python backend. */                                                 \
-      IF_USING_PYBIND11(pybind11::module& BACKENDNAME = backendInfo().      \
-       getPythonBackend(STRINGIFY(BACKENDNAME), STRINGIFY(VERSION));)       \
+      /* Deferred: load library, register with Core and logger, set dir. */ \
+      namespace                                                              \
+      {                                                                     \
+        int CAT(__load_library_init_,SAFE_VERSION) =                        \
+         ::Gambit::Backends::register_backend_initialiser([](){             \
+           backendInfo().loadLibrary(STRINGIFY(BACKENDNAME),                 \
+            STRINGIFY(VERSION), STRINGIFY(SAFE_VERSION),                    \
+            DO_CLASSLOADING, STRINGIFY(BACKENDLANG));                       \
+           REGISTER_BACKEND_DEFERRED(BACKENDNAME, VERSION,                  \
+            SAFE_VERSION, REFERENCE)                                        \
+           register_backend_with_log(STRINGIFY(BACKENDNAME));               \
+           backendDir = backendInfo().path_dir(STRINGIFY(BACKENDNAME),      \
+            STRINGIFY(VERSION));                                             \
+           IF_USING_PYBIND11(CAT(BACKENDNAME,_module_ptr) =                 \
+            &backendInfo().getPythonBackend(STRINGIFY(BACKENDNAME),         \
+             STRINGIFY(VERSION));)                                           \
+         });                                                                 \
+      }                                                                     \
     }                                                                       \
   }                                                                         \
 }                                                                           \
@@ -182,10 +193,17 @@ namespace Gambit                                                            \
   {                                                                         \
     namespace CAT_3(BACKENDNAME,_,SAFE_VERSION)                             \
     {                                                                       \
-      /* Disable the initialisation function if the backend is missing */   \
-      int ini_status = set_BackendIniBit_functor_status(                    \
-       BackendIniBit::Functown::CAT_4(BACKENDNAME,_,SAFE_VERSION,_init),    \
-       STRINGIFY(BACKENDNAME), STRINGIFY(VERSION));                         \
+      /* Deferred: disable init functor if backend missing. Must run after*/\
+      /* the loadLibrary callable registered above.                       */ \
+      namespace                                                              \
+      {                                                                     \
+        int CAT(__ini_status_init_,SAFE_VERSION) =                          \
+         ::Gambit::Backends::register_backend_initialiser([](){             \
+           set_BackendIniBit_functor_status(                                 \
+            BackendIniBit::Functown::CAT_4(BACKENDNAME,_,SAFE_VERSION,_init),\
+            STRINGIFY(BACKENDNAME), STRINGIFY(VERSION));                    \
+         });                                                                 \
+      }                                                                     \
     }                                                                       \
   }                                                                         \
 }                                                                           \
@@ -199,6 +217,15 @@ namespace Gambit                                                            \
     register_backend(STRINGIFY(BE), STRINGIFY(VER), SAFE_STRINGIFY(REF));
 #else
   #define REGISTER_BACKEND(BE, VER, SAFEVER, REF) DUMMYARG(BE, VER, SAFEVER, REF)
+#endif
+
+/// Variant of REGISTER_BACKEND for use inside a deferred lambda (no int sentinel needed).
+#ifndef STANDALONE
+  #define REGISTER_BACKEND_DEFERRED(BE, VER, SAFEVER, REF)                  \
+    register_backend(STRINGIFY(BE), STRINGIFY(VER), SAFE_STRINGIFY(REF));
+#else
+  #define REGISTER_BACKEND_DEFERRED(BE, VER, SAFEVER, REF)                  \
+    DUMMYARG(BE, VER, SAFEVER, REF)
 #endif
 
 /// Load factory functions for classes provided by this backend
@@ -234,15 +261,20 @@ namespace Gambit                                                                
               CAT(BOOST_PP_SEQ_CAT(BOOST_PP_SEQ_TRANSFORM(APPEND_TOKEN,                         \
          NS_SEP, BOOST_PP_TUPLE_ELEM(2,0,elem))),abstract);                                     \
                                                                                                 \
-      /*Register the type with the backend info object*/                                        \
-      int CAT(registered_type_,BOOST_PP_SEQ_CAT(BOOST_PP_SEQ_TRANSFORM(APPEND_TOKEN,            \
-       NS_SEP, BOOST_PP_TUPLE_ELEM(2,0,elem)))) =                                               \
-       register_type(STRINGIFY(BACKENDNAME)STRINGIFY(VERSION),                                  \
-         STRINGIFY(BOOST_PP_SEQ_FOR_EACH_I(TRAILING_NSQUALIFIER, ,                              \
-         BOOST_PP_SEQ_SUBSEQ(BOOST_PP_TUPLE_ELEM(2,0,elem),0,                                   \
-         BOOST_PP_SUB(BOOST_PP_SEQ_SIZE(BOOST_PP_TUPLE_ELEM(2,0,elem)),1)))                     \
-         BOOST_PP_SEQ_ELEM(BOOST_PP_SUB(BOOST_PP_SEQ_SIZE(BOOST_PP_TUPLE_ELEM(2,0,elem)),1),    \
-         BOOST_PP_TUPLE_ELEM(2,0,elem))));                                                      \
+      /*Register the type with the backend info object (deferred)*/                             \
+      namespace                                                                                  \
+      {                                                                                         \
+        int CAT(__registered_type_,BOOST_PP_SEQ_CAT(BOOST_PP_SEQ_TRANSFORM(APPEND_TOKEN,        \
+         NS_SEP, BOOST_PP_TUPLE_ELEM(2,0,elem)))) =                                             \
+         ::Gambit::Backends::register_backend_initialiser([](){                                 \
+           register_type(STRINGIFY(BACKENDNAME)STRINGIFY(VERSION),                              \
+             STRINGIFY(BOOST_PP_SEQ_FOR_EACH_I(TRAILING_NSQUALIFIER, ,                          \
+             BOOST_PP_SEQ_SUBSEQ(BOOST_PP_TUPLE_ELEM(2,0,elem),0,                               \
+             BOOST_PP_SUB(BOOST_PP_SEQ_SIZE(BOOST_PP_TUPLE_ELEM(2,0,elem)),1)))                 \
+             BOOST_PP_SEQ_ELEM(BOOST_PP_SUB(BOOST_PP_SEQ_SIZE(BOOST_PP_TUPLE_ELEM(2,0,elem)),1),\
+             BOOST_PP_TUPLE_ELEM(2,0,elem))));                                                  \
+         });                                                                                     \
+      }                                                      \
                                                                                                 \
     } /* end namespace BACKENDNAME_SAFE_VERSION */                                              \
   } /* end namespace Backends */                                                                \
@@ -270,10 +302,8 @@ namespace Gambit                                                                
       /* Define a type NAME_type to be a suitable function pointer. */                          \
       typedef ABSTRACT*(*CAT(NAME,_type))CONVERT_VARIADIC_ARG(ARGS);                            \
                                                                                                 \
-      /* Get the pointer to the function in the shared library. */                              \
-      extern const CAT(NAME,_type) NAME =                                                       \
-       load_backend_symbol<CAT(NAME,_type)>(initVector<str>(STRIP_PARENS(SYMBOLNAMES)),         \
-       STRINGIFY(BACKENDNAME), STRINGIFY(VERSION));                                             \
+      /* Pointer to the factory function; populated by initialise_all(). */                     \
+      CAT(NAME,_type) NAME = nullptr;                                                           \
                                                                                                 \
       /* Function to throw an error if a backend is absent. */                                  \
       ABSTRACT* CAT(backend_not_loaded_,NAME)CONVERT_VARIADIC_ARG(ARGS)                         \
@@ -304,21 +334,35 @@ namespace Gambit                                                                
         return NULL;                                                                            \
       }                                                                                         \
                                                                                                 \
+      /* Deferred: load symbol and hand pointer to wrapper class. */                            \
+      namespace                                                                                  \
+      {                                                                                         \
+        int CAT(__factory_init_,NAME) =                                                         \
+         ::Gambit::Backends::register_backend_initialiser([](){                                 \
+           Gambit::Backends::CAT_3(BACKENDNAME,_,SAFE_VERSION)::NAME =                          \
+            load_backend_symbol<CAT(NAME,_type)>(                                               \
+             initVector<str>(STRIP_PARENS(SYMBOLNAMES)),                                        \
+             STRINGIFY(BACKENDNAME), STRINGIFY(VERSION));                                       \
+           Gambit::Backends::CAT_3(BACKENDNAME,_,SAFE_VERSION)::PTRNAME =                       \
+            Gambit::Backends::handover_factory_pointer(STRINGIFY(BACKENDNAME),                  \
+             STRINGIFY(VERSION), STRINGIFY(NAME), STRINGIFY(BARENAME),                          \
+             STRINGIFY(CONVERT_VARIADIC_ARG(ARGS)),                                             \
+             Gambit::initVector<std::string>(STRIP_PARENS(SYMBOLNAMES)),                        \
+             Gambit::Backends::CAT_3(BACKENDNAME,_,SAFE_VERSION)::NAME,                         \
+             &Gambit::Backends::CAT_3(BACKENDNAME,_,SAFE_VERSION)::CAT(backend_not_loaded_,NAME),\
+             &Gambit::Backends::CAT_3(BACKENDNAME,_,SAFE_VERSION)::CAT(factory_not_loaded_,NAME));\
+         });                                                                                     \
+      }                                                                                         \
+                                                                                                \
     }                                                                                           \
   }                                                                                             \
 }                                                                                               \
                                                                                                 \
 namespace CAT_3(BACKENDNAME,_,SAFE_VERSION)                                                     \
 {                                                                                               \
-  /* Define the static function pointer in the wrapper class for this factory. */               \
+  /* Default-initialise the wrapper class static pointer; set by initialise_all(). */           \
   Gambit::Backends::CAT_3(BACKENDNAME,_,SAFE_VERSION)::CAT(NAME,_type)                          \
-   Gambit::Backends::CAT_3(BACKENDNAME,_,SAFE_VERSION)::PTRNAME =                               \
-   Gambit::Backends::handover_factory_pointer(STRINGIFY(BACKENDNAME), STRINGIFY(VERSION),       \
-   STRINGIFY(NAME), STRINGIFY(BARENAME), STRINGIFY(CONVERT_VARIADIC_ARG(ARGS)),                 \
-   Gambit::initVector<std::string>(STRIP_PARENS(SYMBOLNAMES)),                                  \
-   Gambit::Backends::CAT_3(BACKENDNAME,_,SAFE_VERSION)::NAME,                                   \
-   &Gambit::Backends::CAT_3(BACKENDNAME,_,SAFE_VERSION)::CAT(backend_not_loaded_,NAME),         \
-   &Gambit::Backends::CAT_3(BACKENDNAME,_,SAFE_VERSION)::CAT(factory_not_loaded_,NAME));        \
+   Gambit::Backends::CAT_3(BACKENDNAME,_,SAFE_VERSION)::PTRNAME = nullptr;                      \
 }                                                                                               \
 
 
@@ -350,11 +394,20 @@ namespace Gambit                                                              \
     namespace CAT_3(BACKENDNAME,_,SAFE_VERSION)                               \
     {                                                                         \
                                                                               \
-      /* Set the variable pointer and the getptr function. */                 \
-      extern TYPE* const NAME =                                               \
-       load_backend_symbol<TYPE*>(initVector<str>(STRIP_PARENS(SYMBOLNAMES)), \
-       STRINGIFY(BACKENDNAME), STRINGIFY(VERSION));                           \
+      /* Variable pointer; populated by initialise_all(). */                  \
+      TYPE* NAME = nullptr;                                                   \
       TYPE* CAT(getptr,NAME)() { return NAME; }                               \
+                                                                              \
+      /* Deferred: load the symbol from the shared library. */                \
+      namespace                                                                \
+      {                                                                       \
+        int CAT(__varsym_init_,NAME) =                                        \
+         ::Gambit::Backends::register_backend_initialiser([](){               \
+           NAME = load_backend_symbol<TYPE*>(                                  \
+            initVector<str>(STRIP_PARENS(SYMBOLNAMES)),                       \
+            STRINGIFY(BACKENDNAME), STRINGIFY(VERSION));                      \
+         });                                                                   \
+      }                                                                       \
                                                                               \
     }                                                                         \
   }                                                                           \
@@ -383,12 +436,18 @@ namespace Gambit                                                              \
         Models::ModelDB());                                                   \
       } /* end namespace Functown */                                          \
                                                                               \
-      /* Set the allowed model properties of the functor. */                  \
+      /* Set the allowed model properties of the functor (deferred). */        \
       SET_ALLOWED_MODELS(NAME, MODELS)                                        \
                                                                               \
-      /* Disable the functor if the library is missing or symbol not found. */\
-      int CAT(vstatus_,NAME) = set_backend_functor_status(Functown::NAME,     \
-       initVector<str>(STRIP_PARENS(SYMBOLNAMES)));                           \
+      /* Deferred: disable functor if library missing or symbol not found. */ \
+      namespace                                                                \
+      {                                                                       \
+        int CAT(__vstatus_init_,NAME) =                                       \
+         ::Gambit::Backends::register_backend_initialiser([](){               \
+           set_backend_functor_status(Functown::NAME,                         \
+            initVector<str>(STRIP_PARENS(SYMBOLNAMES)));                      \
+         });                                                                   \
+      }                                                                       \
                                                                               \
     } /* end namespace BACKENDNAME_SAFE_VERSION */                            \
   } /* end namespace Backends */                                              \
@@ -406,7 +465,13 @@ namespace Gambit                                                              \
   {                                                                           \
     namespace CAT_3(BACKENDNAME,_,SAFE_VERSION)                               \
     {                                                                         \
-      int CAT(vptr_supp_,NAME) = register_backend_functor(Functown::NAME);    \
+      namespace                                                                \
+      {                                                                       \
+        int CAT(__vptr_supp_init_,NAME) =                                     \
+         ::Gambit::Backends::register_backend_initialiser([](){               \
+           register_backend_functor(Functown::NAME);                          \
+         });                                                                   \
+      }                                                                       \
     }                                                                         \
   }                                                                           \
 }                                                                             \
@@ -463,8 +528,19 @@ namespace Gambit                                                                
       /* Define a type NAME_type to be a suitable function pointer. */                          \
       typedef TYPE (*NAME##_type) CONVERT_VARIADIC_ARG(ARGLIST);                                \
                                                                                                 \
-      extern const NAME##_type NAME = load_backend_symbol<NAME##_type>(initVector<str>(         \
-      STRIP_PARENS(SYMBOLNAMES)), STRINGIFY(BACKENDNAME), STRINGIFY(VERSION));                  \
+      /* Function pointer; populated by initialise_all(). */                                    \
+      NAME##_type NAME = nullptr;                                                               \
+                                                                                                \
+      /* Deferred: load the symbol from the shared library. */                                  \
+      namespace                                                                                  \
+      {                                                                                         \
+        int CAT(__funsym_init_,NAME) =                                                          \
+         ::Gambit::Backends::register_backend_initialiser([](){                                 \
+           NAME = load_backend_symbol<NAME##_type>(                                             \
+            initVector<str>(STRIP_PARENS(SYMBOLNAMES)),                                        \
+            STRINGIFY(BACKENDNAME), STRINGIFY(VERSION));                                        \
+         });                                                                                     \
+      }                                                                                         \
                                                                                                 \
     }                                                                                           \
   }                                                                                             \
@@ -495,11 +571,17 @@ namespace Gambit                                                                
          Models::ModelDB());                                                                    \
       } /* end namespace Functown */                                                            \
                                                                                                 \
-      /* Disable the functor if the library is not present or the symbol not found. */          \
-      int CAT(fstatus_,NAME)=set_backend_functor_status(Functown::NAME,                         \
-       initVector<str>(STRIP_PARENS(SYMBOLNAMES)));                                             \
+      /* Deferred: disable functor if library missing or symbol not found. */  \
+      namespace                                                                                  \
+      {                                                                                         \
+        int CAT(__fstatus_init_,NAME) =                                                         \
+         ::Gambit::Backends::register_backend_initialiser([](){                                 \
+           set_backend_functor_status(Functown::NAME,                                           \
+            initVector<str>(STRIP_PARENS(SYMBOLNAMES)));                                        \
+         });                                                                                     \
+      }                                                                                         \
                                                                                                 \
-      /* Set the allowed model properties of the functor. */                                    \
+      /* Set the allowed model properties of the functor (deferred). */                         \
       SET_ALLOWED_MODELS(NAME, MODELS)                                                          \
                                                                                                 \
     } /* end namespace BACKENDNAME_SAFE_VERSION */                                              \
@@ -511,7 +593,7 @@ namespace Gambit                                                                
 } /* end namespace Gambit*/
 
 
-/// Supplemenentary backend function macro
+/// Supplementary backend function macro
 #define BE_FUNCTION_I_SUPP(NAME)                                                                \
 namespace Gambit                                                                                \
 {                                                                                               \
@@ -519,7 +601,13 @@ namespace Gambit                                                                
   {                                                                                             \
     namespace CAT_3(BACKENDNAME,_,SAFE_VERSION)                                                 \
     {                                                                                           \
-      int CAT(fptr_supp_,NAME) = register_backend_functor(Functown::NAME);                      \
+      namespace                                                                                  \
+      {                                                                                         \
+        int CAT(__fptr_supp_init_,NAME) =                                                       \
+         ::Gambit::Backends::register_backend_initialiser([](){                                 \
+           register_backend_functor(Functown::NAME);                                            \
+         });                                                                                     \
+      }                                                                                         \
     }                                                                                           \
   }                                                                                             \
 }                                                                                               \
@@ -564,11 +652,17 @@ namespace Gambit                                                                
          Models::ModelDB());                                                                    \
       } /* end namespace Functown */                                                            \
                                                                                                 \
-      /* Disable the functor if the library is not present or the symbol not found. */          \
-      int CAT(fstatus_,NAME) = set_backend_functor_status(Functown::NAME,                       \
-       initVector<str>("no_symbol"));                                                           \
+      /* Deferred: disable functor if library missing. */                       \
+      namespace                                                                                  \
+      {                                                                                         \
+        int CAT(__cfstatus_init_,NAME) =                                                        \
+         ::Gambit::Backends::register_backend_initialiser([](){                                 \
+           set_backend_functor_status(Functown::NAME,                                           \
+            initVector<str>("no_symbol"));                                                      \
+         });                                                                                     \
+      }                                                                                         \
                                                                                                 \
-      /* Set the allowed model properties of the functor. */                                    \
+      /* Set the allowed model properties of the functor (deferred). */                         \
       SET_ALLOWED_MODELS(NAME, MODELS)                                                          \
     }                                                                                           \
   }                                                                                             \
@@ -584,7 +678,13 @@ namespace Gambit                                                                
   {                                                                                             \
     namespace CAT_3(BACKENDNAME,_,SAFE_VERSION)                                                 \
     {                                                                                           \
-      int CAT(cfptr_supp_,NAME) = register_backend_functor(Functown::NAME);                     \
+      namespace                                                                                  \
+      {                                                                                         \
+        int CAT(__cfptr_supp_init_,NAME) =                                                      \
+         ::Gambit::Backends::register_backend_initialiser([](){                                 \
+           register_backend_functor(Functown::NAME);                                            \
+         });                                                                                     \
+      }                                                                                         \
     }                                                                                           \
   }                                                                                             \
 }                                                                                               \

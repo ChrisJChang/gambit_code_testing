@@ -26,6 +26,7 @@
 #include "gambit/Elements/mssm_slhahelp.hpp"
 #include "gambit/Models/SimpleSpectra/MSSMSimpleSpec.hpp"
 #include "gambit/Utils/util_functions.hpp"
+#include "gambit/Backends/backend_initialiser.hpp"
 
 using namespace DarkBit::Functown;     // Functors wrapping the module's actual module functions
 using namespace BackendIniBit::Functown;    // Functors wrapping the backend initialisation functions
@@ -97,7 +98,10 @@ int main()
     initialise_standalone_logs("runs/DarkBit_standalone_ScalarSingletDM_Z2/logs/");
     logger()<<"Running DarkBit standalone example"<<LogTags::info<<EOM;
     model_warning().set_fatal(true);
-    
+
+    // Load all backend libraries, resolve symbols, and register functors.
+    Gambit::Backends::initialise_all();
+
     // Initialise settings for printer (required)
     YAML::Node printerNode = get_standalone_printer("cout", "runs/DarkBit_standalone_ScalarSingletDM_Z2/logs/","");
     Printers::PrinterManager printerManager(printerNode, false);

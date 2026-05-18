@@ -29,6 +29,7 @@
 #include "gambit/SpecBit/SpecBit_rollcall.hpp"
 #include "gambit/DecayBit/DecayBit_rollcall.hpp"
 #include "gambit/PrecisionBit/PrecisionBit_rollcall.hpp"
+#include "gambit/Backends/backend_initialiser.hpp"
 
 using namespace BackendIniBit::Functown;
 using namespace SpecBit::Functown;
@@ -84,6 +85,9 @@ int main()
 
     // Initialise the random number generator.
     Random::create_rng_engine("default");
+
+    // Load all backend libraries, resolve symbols, and register functors.
+    Gambit::Backends::initialise_all();
 
     // Check that required backends are present
     if (not Backends::backendInfo().works["SPheno4.0.3"]) backend_error().raise(LOCAL_INFO, "SPheno 4.0.3 is missing!");

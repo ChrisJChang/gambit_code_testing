@@ -33,6 +33,7 @@
 // Just required in this one
 #include "gambit/Elements/spectrum_factories.hpp"
 #include "gambit/Models/SimpleSpectra/MSSMSimpleSpec.hpp"
+#include "gambit/Backends/backend_initialiser.hpp"
 
 using namespace FlavBit::Functown;      // Functors wrapping the module's actual module functions
 using namespace BackendIniBit::Functown;    // Functors wrapping the backend initialisation functions
@@ -110,6 +111,9 @@ int main(int argc, char** argv)
 
     // Initialise global LogMaster object
     logger().initialise(loggerinfo);
+
+    // Load all backend libraries, resolve symbols, and register functors.
+    Gambit::Backends::initialise_all();
 
     logger()<<"Running FlavBit standalone example"<<LogTags::info<<EOM;
 

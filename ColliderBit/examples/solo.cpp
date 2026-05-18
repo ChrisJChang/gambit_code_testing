@@ -22,6 +22,7 @@
 #include "gambit/ColliderBit/ColliderBit_rollcall.hpp"
 #include "gambit/Utils/util_functions.hpp"
 #include "gambit/Utils/cats.hpp"
+#include "gambit/Backends/backend_initialiser.hpp"
 // #include "gambit/Backends/backend_rollcall.hpp"
 
 #define NULIKE_VERSION "1.0.9"
@@ -67,6 +68,9 @@ int main(int argc, char* argv[])
       cerr << endl << "Usage: " << argv[0] << " <your CBS yaml file>" << endl << endl;
       return 1;
     }
+
+    // Load all backend libraries, resolve symbols, and register functors.
+    Gambit::Backends::initialise_all();
 
     // Make sure that nulike is present.
     if (not Backends::backendInfo().works[str("nulike")+NULIKE_VERSION]) backend_error().raise(LOCAL_INFO, str("nulike ")+NULIKE_VERSION+" is missing!");
