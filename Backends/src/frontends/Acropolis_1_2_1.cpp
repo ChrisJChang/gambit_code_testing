@@ -194,7 +194,7 @@ BE_INI_FUNCTION
       first_point = false;
 
       // Save the submodule "models" (for later)
-      AC = Gambit::Backends::Acropolis_1_2_1::Acropolis;
+      AC = *Gambit::Backends::Acropolis_1_2_1::Acropolis_module_ptr;
       std::string module_name = AC.attr("__name__").cast<std::string>();
       AC_models = py::module::import( (module_name + ".models").c_str() );
 
