@@ -90,9 +90,9 @@ namespace Gambit
   void gambit_core::backend_diagnostic()
   {
 
-    YAML::Node gambit_backends_yaml = YAML::LoadFile(GAMBIT_DIR "/config/gambit_backends.yaml");
-    auto gambit_backends = gambit_backends_yaml["enabled"].as<std::map<std::string, std::vector<std::string>>>();
-    auto gambit_backends_disabled = gambit_backends_yaml["disabled"].as<std::map<std::string, std::vector<std::string>>>();
+    YAML::Node backend_interfaces_yaml = YAML::LoadFile(GAMBIT_DIR "/config/gambit_backend_interfaces.yaml");
+    auto gambit_backends = backend_interfaces_yaml["enabled"].as<std::map<std::string, std::vector<std::string>>>();
+    auto gambit_backends_disabled = backend_interfaces_yaml["disabled"].as<std::map<std::string, std::vector<std::string>>>();
 
     for (auto &backend : gambit_backends_disabled)
     {

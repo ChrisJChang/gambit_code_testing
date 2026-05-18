@@ -521,7 +521,9 @@ endif()
 add_custom_target(docs WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} COMMAND doxygen doc/doxygen.conf)
 
 # Work out which modules to include in the compile
+gambit_translate_bits_into_itch()
 retrieve_bits(GAMBIT_BITS ${PROJECT_SOURCE_DIR} "${itch}" "Loud")
+gambit_configure_optin_build()
 
 # Set up targets to make standalone tarballs of the different modules
 add_standalone_tarballs("${GAMBIT_BITS}" "${GAMBIT_VERSION_FULL}")
@@ -597,6 +599,14 @@ list(REMOVE_ITEM MODULE_HARVESTER_FILES "${PROJECT_SOURCE_DIR}/ScannerBit//inclu
 list(APPEND MODULE_HARVESTER_FILES "${PROJECT_SOURCE_DIR}/config/resolution_type_equivalency_classes.yaml")
 set(MODULE_HARVESTER_FILES ${MODULE_HARVESTER_FILES} ${BACKEND_HARVESTER_FILES})
 remove_build_files(models_harvested backends_harvested modules_harvested printers_harvested colliders_harvested)
+
+# Add backends and scanners. Done before the harvest registration so late
+# additions to ${itch} (e.g. the FeynHiggs gfortran>=10 ditch) reach the
+# harvester.
+include(cmake/externals.cmake)
+
+string (REPLACE ";" "," itch_with_commas "${itch}")
+
 if(EXISTS "${PROJECT_SOURCE_DIR}/Elements/")
   add_gambit_custom(module_harvest modules_harvested MODULE_HARVESTER MODULE_HARVESTER_FILES ${itch_with_commas})
 endif()
@@ -620,13 +630,10 @@ endif()
 
 # Generate the CMakeLists.txt files for GAMBIT modules, Backends, Models and Printers)
 message("${Yellow}-- Updating GAMBIT module, model, backend, and printer CMake files.${ColourReset}")
-set(update_cmakelists ${PROJECT_SOURCE_DIR}/cmake/scripts/update_cmakelists.py -x __not_a_real_name__,${itch_with_commas})
+set(update_cmakelists ${PROJECT_SOURCE_DIR}/cmake/scripts/update_cmakelists.py -x __not_a_real_name__,${itch_with_commas} ${update_cmakelists_extra_args})
 execute_process(RESULT_VARIABLE result COMMAND ${Python3_EXECUTABLE} ${update_cmakelists} WORKING_DIRECTORY ${PROJECT_SOURCE_DIR})
 check_result(${result} ${update_cmakelists})
 message("${Yellow}-- Updating GAMBIT module, backend, and printer CMake files - done.${ColourReset}")
-
-# Add backends and scanners
-include(cmake/externals.cmake)
 
 # Add GAMBIT subdirectories.
 add_subdirectory(Logs)
@@ -667,3 +674,23 @@ include(cmake/executables.cmake)
 if(EXISTS "${PROJECT_SOURCE_DIR}/ScannerBit/")
   include(${PROJECT_BINARY_DIR}/linkedout.cmake)
 endif()
+
+# `make list-backends` and `make list-scanners` status-table targets.
+# Each writes its data file on every cmake configure.
+file(WRITE "${PROJECT_BINARY_DIR}/list_backends_data.txt"
+     "TARGETS=${GAMBIT_AVAILABLE_BACKEND_TARGETS}\nBUILD_DIR=${PROJECT_BINARY_DIR}\nDITCHED=${itch}\n")
+add_custom_target(list-backends
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/Backends/scripts/list_backends.py ${PROJECT_BINARY_DIR}/list_backends_data.txt
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+  USES_TERMINAL)
+add_dependencies(list-backends backend_harvest)
+
+file(WRITE "${PROJECT_BINARY_DIR}/list_scanners_data.txt"
+     "EXTERNAL_TARGETS=${GAMBIT_AVAILABLE_SCANNER_TARGETS}\nPYTHON_SCANNERS=${GAMBIT_PYTHON_SCANNER_STATUS}\nBUILD_DIR=${PROJECT_BINARY_DIR}\n")
+add_custom_target(list-scanners
+  COMMAND ${Python3_EXECUTABLE} ${PROJECT_SOURCE_DIR}/ScannerBit/scripts/list_scanners.py ${PROJECT_BINARY_DIR}/list_scanners_data.txt
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+  USES_TERMINAL)
+
+message("${BoldYellow}-- Run `make list-backends` to see the available backend make targets.${ColourReset}")
+message("${BoldYellow}-- Run `make list-scanners` to see the available scanner make targets.${ColourReset}")

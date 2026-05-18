@@ -17,6 +17,15 @@ For a more complete list of cmake variables, take a look in the file `CMakeCache
 # Ditch GAMBIT components that you don't intend to use: itch
 -Ditch="ColliderBit;NeutrinoBit;Mathematica"
 
+# Select only the Bits you need: Bits
+# Similar to -Ditch, but opt-in rather than opt-out. If some Bits 
+# are specified using -DBits, all other Bits except ScannerBit are 
+# added to the ditch list. -DBits and -Ditch must not overlap.
+-DBits="DarkBit;PrecisionBit;SpecBit;DecayBit"          # typical dark matter project
+-DBits="ColliderBit;PrecisionBit;SpecBit;DecayBit"      # typical collider project
+-DBits="CosmoBit;DarkBit"                               # typical cosmology project
+
+
 # List the FlexibleSUSY models to build: BUILD_FS_MODELS
 # The names of the available FlexibleSUSY models correspond to 
 # the subdirectories in 
@@ -86,6 +95,17 @@ For a more complete list of cmake variables, take a look in the file `CMakeCache
 
 # Create Graphviz files: HAVE_GRAPHVIZ (On|Off)
 -DHAVE_GRAPHVIZ=On
+
+
+# Skip the build of any backend interface that no enabled Bit references
+# at the source level: GAMBIT_TRIM_BACKEND_INTERFACES (On|Off)
+# Auto-set to ON when -DBits is used or when -Ditch removes any Bit.
+# Set this to OFF to disable the trimming explicitly, e.g. when developing 
+# a new backend that no Bit yet references. Pair with 
+# -DGAMBIT_FORCE_BACKEND_INTERFACE="Name1;Name2" to keep specific backends 
+# regardless.
+-DGAMBIT_TRIM_BACKEND_INTERFACES=On
+-DGAMBIT_FORCE_BACKEND_INTERFACE="Acropolis;DarkCast"
 
 ```
 
