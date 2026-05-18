@@ -73,7 +73,7 @@ namespace Gambit                                                            \
       extern str backendDir;                                                \
       /* Make an easy reference to the actual backend module if it is a */  \
       /* Python backend. */                                                 \
-      IF_USING_PYBIND11(extern pybind11::module* CAT(BACKENDNAME,_module_ptr);)              \
+      IF_USING_PYBIND11(extern pybind11::module BACKENDNAME;)              \
     }                                                                       \
   }                                                                         \
 }                                                                           \

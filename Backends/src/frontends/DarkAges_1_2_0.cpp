@@ -238,7 +238,7 @@ BE_INI_FUNCTION
       }
 
       // Save the submodule "model" (for later)
-      DA = *Gambit::Backends::DarkAges_1_2_0::DarkAges_module_ptr;
+      DA = Gambit::Backends::DarkAges_1_2_0::DarkAges;
       std::string module_name = DA.attr("__name__").cast<std::string>();
       DA_model = py::module::import( (module_name + ".model").c_str() );
 

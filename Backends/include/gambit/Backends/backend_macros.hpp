@@ -147,9 +147,8 @@ namespace Gambit                                                            \
       /* backendDir is set inside the deferred callable below.           */ \
       str backendDir;                                                        \
                                                                             \
-      /* Python module pointer set inside the deferred callable below.   */ \
-      IF_USING_PYBIND11(pybind11::module* CAT(BACKENDNAME,_module_ptr)      \
-       = nullptr;)                                                          \
+      /* Python module; assigned inside the deferred callable below.      */ \
+      IF_USING_PYBIND11(pybind11::module BACKENDNAME;)                        \
                                                                             \
       /* Deferred: load library, register with Core and logger, set dir. */ \
       namespace                                                              \
@@ -164,8 +163,8 @@ namespace Gambit                                                            \
            register_backend_with_log(STRINGIFY(BACKENDNAME));               \
            backendDir = backendInfo().path_dir(STRINGIFY(BACKENDNAME),      \
             STRINGIFY(VERSION));                                             \
-           IF_USING_PYBIND11(CAT(BACKENDNAME,_module_ptr) =                 \
-            &backendInfo().getPythonBackend(STRINGIFY(BACKENDNAME),         \
+           IF_USING_PYBIND11(BACKENDNAME =                                   \
+            backendInfo().getPythonBackend(STRINGIFY(BACKENDNAME),          \
              STRINGIFY(VERSION));)                                           \
          });                                                                 \
       }                                                                     \
