@@ -134,6 +134,102 @@ def lookup_type_headers_for_backend(backend_name, regular_headers, bossed_header
     return result
 
 
+def build_reverse_type_map(regular_headers, verbose):
+    """Build a map from struct/class type names (in flat backend type headers) to header filenames.
+
+    Only captures actual struct/class definitions (not forward declarations ending with ';').
+    Returns: dict mapping type_name -> header_filename
+    """
+    backend_types_dir = "./Backends/include/gambit/Backends/backend_types"
+
+    type_to_header = {}
+    for fname in sorted(regular_headers.values()):
+        fpath = os.path.join(backend_types_dir, fname)
+        if not os.path.isfile(fpath):
+            continue
+        try:
+            with io.open(fpath, 'r', encoding='utf-8', errors='replace') as f:
+                content = f.read()
+        except Exception:
+            continue
+        # Match struct/class definitions that are NOT forward declarations.
+        # re.MULTILINE anchors ^ to start of each line.
+        # The negative lookahead (?!\s*;) excludes forward declarations like 'class Foo;'.
+        for m in re.finditer(
+                r'^\s*(?:struct|class)\s+([A-Za-z_][A-Za-z0-9_]*)(?!\s*;)(?!\s*>)',
+                content, re.MULTILINE):
+            type_name = m.group(1)
+            # Skip generic template parameter names ('T', 'U', 'Key', 'Value', etc.)
+            if len(type_name) <= 2:
+                continue
+            if type_name not in type_to_header:
+                type_to_header[type_name] = fname
+
+    if verbose:
+        print("Reverse type map ({} entries):".format(len(type_to_header)))
+        for k, v in sorted(type_to_header.items()):
+            print("  {} -> {}".format(k, v))
+
+    return type_to_header
+
+
+def extract_types_used_in_macros(filepath):
+    """Extract type name tokens used in module rollcall macros.
+
+    Handles: DEPENDENCY(cap, TYPE), MODEL_CONDITIONAL_DEPENDENCY(cap, TYPE, ...),
+             START_FUNCTION(TYPE), START_FUNCTION(TYPE, FLAG),
+             START_CONDITIONAL_DEPENDENCY(TYPE),
+             BACKEND_REQ(name, (tags), TYPE, (args)),
+             BACKEND_REQ_FROM_GROUP(group, name, (tags), TYPE, (args)),
+             QUICK_FUNCTION(MODULE, CAP, FLAG, FUNC, TYPE, ...)
+
+    Returns: set of individual identifier tokens found in type arguments.
+    """
+    tokens = set()
+    try:
+        with io.open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+            content = comment_remover(f.read())
+    except Exception:
+        return tokens
+
+    type_strings = set()
+
+    # DEPENDENCY(capability, TYPE) — second argument
+    for m in re.finditer(r'\bDEPENDENCY\s*\(\s*\w+\s*,\s*([^)]+?)\s*\)', content):
+        type_strings.add(m.group(1).strip())
+
+    # MODEL_CONDITIONAL_DEPENDENCY(capability, TYPE, models...) — second argument
+    for m in re.finditer(r'\bMODEL_CONDITIONAL_DEPENDENCY\s*\(\s*\w+\s*,\s*([^,)]+)', content):
+        type_strings.add(m.group(1).strip())
+
+    # START_FUNCTION(TYPE) or START_FUNCTION(TYPE, FLAG) — first argument
+    for m in re.finditer(r'\bSTART_FUNCTION\s*\(\s*([^,)]+?)(?:\s*,|\s*\))', content):
+        type_strings.add(m.group(1).strip())
+
+    # START_CONDITIONAL_DEPENDENCY(TYPE) — first argument
+    for m in re.finditer(r'\bSTART_CONDITIONAL_DEPENDENCY\s*\(\s*([^)]+?)\s*\)', content):
+        type_strings.add(m.group(1).strip())
+
+    # BACKEND_REQ(name, (tags), TYPE, (args)) — third argument (after closing ')' of tags)
+    for m in re.finditer(r'\bBACKEND_REQ\s*\(\s*\w+\s*,\s*\([^)]*\)\s*,\s*([^,)]+?)(?:\s*,\s*\(|\s*\))', content):
+        type_strings.add(m.group(1).strip())
+
+    # BACKEND_REQ_FROM_GROUP(group, name, (tags), TYPE, ...) — fourth argument
+    for m in re.finditer(r'\bBACKEND_REQ_FROM_GROUP\s*\(\s*\w+\s*,\s*\w+\s*,\s*\([^)]*\)\s*,\s*([^,)]+?)(?:\s*,|\s*\))', content):
+        type_strings.add(m.group(1).strip())
+
+    # QUICK_FUNCTION(MODULE, CAP, FLAG, FUNC, TYPE, ...) — fifth argument
+    for m in re.finditer(r'\bQUICK_FUNCTION\s*\(\s*\w+\s*,\s*\w+\s*,\s*\w+\s*,\s*\w+\s*,\s*([^,)]+?)(?:\s*,|\s*\))', content):
+        type_strings.add(m.group(1).strip())
+
+    # Tokenize all extracted type strings into individual identifiers
+    for type_str in type_strings:
+        for token in re.findall(r'[A-Za-z_][A-Za-z0-9_]*', type_str):
+            tokens.add(token)
+
+    return tokens
+
+
 def extract_backend_names_from_file(filepath):
     """Extract all declared backend names from a single header file.
 
@@ -176,8 +272,12 @@ def extract_backend_names_from_file(filepath):
     return backends
 
 
-def find_backends_for_module(module_name, verbose):
+def find_backends_for_module(module_name, reverse_type_map, verbose):
     """Scan all headers in a module's include directory for backend declarations.
+
+    Uses both direct backend name detection (BACKEND_OPTION, NEEDS_CLASSES_FROM, namespace
+    patterns) and a reverse type map to detect backends needed only via DEPENDENCY macros
+    that reference unqualified backend-specific struct/class types.
 
     Returns the set of all backend names declared in the module.
     """
@@ -186,25 +286,35 @@ def find_backends_for_module(module_name, verbose):
         return set()
 
     backends = set()
+    type_headers_needed = set()
+
     for root, dirs, files in os.walk(module_include_dir):
         for fname in files:
             if fname.endswith(('.hpp', '.h', '.hh')):
                 fpath = os.path.join(root, fname)
+                # Direct backend name detection via macros and namespace patterns
                 new_backends = extract_backend_names_from_file(fpath)
                 backends.update(new_backends)
+                # Reverse type map: detect unqualified backend types in DEPENDENCY etc.
+                tokens = extract_types_used_in_macros(fpath)
+                for token in tokens:
+                    if token in reverse_type_map:
+                        type_headers_needed.add(reverse_type_map[token])
 
-    if verbose and backends:
-        print("  Module {}: backends declared = {}".format(module_name, sorted(backends)))
+    if verbose and (backends or type_headers_needed):
+        print("  Module {}: backends declared = {}, extra type headers = {}".format(
+            module_name, sorted(backends), sorted(type_headers_needed)))
 
-    return backends
+    return backends, type_headers_needed
 
 
-def generate_per_module_backend_type_rollcalls(regular_headers, bossed_headers, exclude_backends, verbose):
+def generate_per_module_backend_type_rollcalls(regular_headers, bossed_headers, reverse_type_map, exclude_backends, verbose):
     """Generate a per-module backend types rollcall header for each module.
 
     Each generated file includes only the backend type headers that the module
     actually uses (as declared via BACKEND_OPTION, SET_BACKEND_OPTION, or
-    NEEDS_CLASSES_FROM in its rollcall and other include headers).
+    NEEDS_CLASSES_FROM in its rollcall and other include headers, or referenced
+    as unqualified types in DEPENDENCY/START_FUNCTION macros).
 
     Generated file location: ${MODULE}/include/gambit/${MODULE}/${MODULE}_backend_types_rollcall.hpp
     """
@@ -234,11 +344,11 @@ def generate_per_module_backend_type_rollcalls(regular_headers, bossed_headers, 
                 print("  Skipping excluded module: " + module_name)
             continue
 
-        # Find all backend names declared in this module's headers
-        backend_names = find_backends_for_module(module_name, verbose)
+        # Find all backend names declared in this module's headers,
+        # and extra type headers needed via the reverse type map.
+        backend_names, type_headers_for_module = find_backends_for_module(module_name, reverse_type_map, verbose)
 
-        # Map backend names to type headers
-        type_headers_for_module = set()
+        # Map backend names to type headers (adds to what reverse map already found)
         for bname in backend_names:
             headers = lookup_type_headers_for_backend(bname, regular_headers, bossed_headers)
             type_headers_for_module.update(headers)
@@ -460,7 +570,8 @@ def main(argv):
 
     # Generate per-module backend type rollcall headers
     regular_headers, bossed_headers = build_type_header_maps(verbose)
-    generate_per_module_backend_type_rollcalls(regular_headers, bossed_headers, exclude_backends, verbose)
+    reverse_type_map = build_reverse_type_map(regular_headers, verbose)
+    generate_per_module_backend_type_rollcalls(regular_headers, bossed_headers, reverse_type_map, exclude_backends, verbose)
 
 # Handle command line arguments (verbosity)
 if __name__ == "__main__":
