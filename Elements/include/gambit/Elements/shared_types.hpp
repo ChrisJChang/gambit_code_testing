@@ -59,6 +59,8 @@
 #include "gambit/Backends/default_bossed_versions.hpp"         // Default versions of backends to use when employing BOSSed types
 #include "gambit/Backends/mathematica_variable.hpp"            // Wrapper type for Mathematica global variables
 #include "gambit/Backends/python_variable.hpp"                 // Wrapper type for Python global variables
+#include "gambit/Backends/backend_types/DDCalc.hpp"            // DD coupling containers; used by DM model types in Gambit::Models namespace
+#include <Eigen/Dense>                                         // Eigen matrix types; used across modules for neutrino mixing matrices etc.
 
 // Other types that don't belong in any of the existing includes.  As the number of such types grows, they
 // should be progressively organised into new headers, and those headers included from here.
