@@ -61,6 +61,7 @@
 #ifndef __CosmoBit_rollcall_hpp__
 #define __CosmoBit_rollcall_hpp__
 
+#include "gambit/CosmoBit/CosmoBit_backend_types_rollcall.hpp" // Per-module backend types (auto-generated)
 #include "gambit/CosmoBit/CosmoBit_types.hpp"
 
 

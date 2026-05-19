@@ -50,6 +50,7 @@
 #ifndef __DecayBit_rollcall_hpp__
 #define __DecayBit_rollcall_hpp__
 
+#include "gambit/DecayBit/DecayBit_backend_types_rollcall.hpp" // Per-module backend types (auto-generated)
 
 #define MODULE DecayBit
 #define REFERENCE GAMBITModelsWorkgroup:2017ilg

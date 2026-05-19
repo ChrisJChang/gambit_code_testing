@@ -66,6 +66,8 @@
 #ifndef __ExampleBit_B_rollcall_hpp__
 #define __ExampleBit_B_rollcall_hpp__
 
+#include "gambit/ExampleBit_B/ExampleBit_B_backend_types_rollcall.hpp" // Per-module backend types (auto-generated)
+
 #define MODULE ExampleBit_B
 START_MODULE
 

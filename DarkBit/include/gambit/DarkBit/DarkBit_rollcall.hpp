@@ -109,6 +109,7 @@
 
 #pragma once
 
+#include "gambit/DarkBit/DarkBit_backend_types_rollcall.hpp" // Per-module backend types (auto-generated)
 #include "gambit/DarkBit/DarkBit_types.hpp"
 
 #define MODULE DarkBit

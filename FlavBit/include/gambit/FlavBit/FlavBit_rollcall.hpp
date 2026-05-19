@@ -50,6 +50,7 @@
 #ifndef __FlavBit_rollcall_hpp__
 #define __FlavBit_rollcall_hpp__
 
+#include "gambit/FlavBit/FlavBit_backend_types_rollcall.hpp" // Per-module backend types (auto-generated)
 #include "gambit/FlavBit/FlavBit_types.hpp"
 
 #define MODULE FlavBit

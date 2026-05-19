@@ -24,6 +24,7 @@
 #ifndef __SpecBit_rollcall_hpp__
 #define __SpecBit_rollcall_hpp__
 
+#include "gambit/SpecBit/SpecBit_backend_types_rollcall.hpp" // Per-module backend types (auto-generated)
 #include "gambit/SpecBit/SpecBit_types.hpp"
 
 #define MODULE SpecBit

@@ -38,6 +38,8 @@
 #include <Eigen/Sparse>
 #include <Eigen/Dense>
 
+#include "gambit/NeutrinoBit/NeutrinoBit_backend_types_rollcall.hpp" // Per-module backend types (auto-generated)
+
 #define MODULE NeutrinoBit
 #define REFERENCE Chrzaszcz:2019inj
 START_MODULE

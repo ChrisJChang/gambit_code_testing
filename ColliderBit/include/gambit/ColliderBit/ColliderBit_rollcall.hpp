@@ -42,6 +42,7 @@ START_MODULE
 #undef MODULE
 
 #include "gambit/Elements/shared_types.hpp"
+#include "gambit/ColliderBit/ColliderBit_backend_types_rollcall.hpp" // Per-module backend types (auto-generated)
 #include "gambit/ColliderBit/ColliderBit_types.hpp"
 #include "gambit/ColliderBit/ColliderBit_Higgs_rollcall.hpp"
 #include "gambit/ColliderBit/ColliderBit_LEP_rollcall.hpp"

@@ -31,6 +31,8 @@
 #ifndef __ObjectivesBit_rollcall_hpp__
 #define __ObjectivesBit_rollcall_hpp__
 
+#include "gambit/ObjectivesBit/ObjectivesBit_backend_types_rollcall.hpp" // Per-module backend types (auto-generated)
+
 #define MODULE ObjectivesBit
 START_MODULE
 
