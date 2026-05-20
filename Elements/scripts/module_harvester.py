@@ -90,7 +90,7 @@ def main(argv):
     # but are included in module_rollcall.hpp or types_rollcall.hpp)
     exclude_header.update(["shared_types.hpp", "backend_macros.hpp", "backend_undefs.hpp", "identification.hpp",
                            "yaml.h", "module_macros_incore.hpp", "module_macros_inmodule.hpp", "module_macros_common.hpp",
-                           "model_macros.hpp"])
+                           "model_macros.hpp", "backend_types_rollcall.hpp"])
 
     # List of types not to bother looking for the definitions of.
     intrinsic_types=set(["char", "bool", "short", "int", "long", "float", "double", "std::string"])
