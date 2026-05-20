@@ -4,7 +4,7 @@
 #include "gambit/ColliderBit/ATLASEfficiencies.hpp"
 // #include "gambit/ColliderBit/analyses/Perf_Plot.hpp"
 
-#include "Eigen/Core"
+#include "Eigen/Eigen"
 
 
 namespace Gambit {
