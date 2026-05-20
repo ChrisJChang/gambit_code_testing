@@ -3,7 +3,7 @@
 #include "gambit/ColliderBit/analyses/Cutflow.hpp"
 #include "gambit/ColliderBit/ATLASEfficiencies.hpp"
 
-#include "Eigen/Eigen"
+#include "Eigen/Core"
 
 namespace Gambit
 {

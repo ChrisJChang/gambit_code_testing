@@ -26,8 +26,6 @@
 
 #pragma once
 
-#include "Eigen/Core"
-
 #include <string>
 #include <map>
 #include <iostream>

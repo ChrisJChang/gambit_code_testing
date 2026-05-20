@@ -49,7 +49,6 @@
 #include <gsl/gsl_sf_gamma.h>
 
 #include "Eigen/Eigenvalues"
-#include "Eigen/Eigen"
 
 #include "multimin/multimin.hpp"
 
