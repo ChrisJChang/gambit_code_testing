@@ -383,6 +383,7 @@ def generate_per_module_backend_type_rollcalls(regular_headers, bossed_headers, 
 #ifndef {guard}
 #define {guard}
 
+#include "gambit/Backends/default_bossed_versions.hpp"
 #include "gambit/Utils/type_macros.hpp"
 
 """.format(module=module_name,
