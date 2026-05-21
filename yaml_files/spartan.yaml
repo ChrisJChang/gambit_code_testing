@@ -376,6 +376,46 @@ Scanner:
         n_tasks_per_batch: 1
         print_progress_every_n_batch: 100
 
+    # The paraprof scanner runs parallel grid-based profile likelihood scans
+    # using https://github.com/anderkve/paraprof. It requires GAMBIT to be
+    # built with MPI (cmake -DWITH_MPI=1) and >=2 MPI processes, e.g.:
+    #
+    #     mpiexec -n 3 ./gambit -rf yaml_files/spartan.yaml
+    #
+    # (1 master rank + N-1 worker ranks; the master performs no evaluations.)
+    paraprof:
+      like: LogLike
+      plugin: paraprof
+      run:
+        # List of profile likelihood projections to compute.
+        projections:
+          - dims: ["NormalDist::mu", "NormalDist::sigma"]
+            grid_points: [60, 60]
+            optimization_method: de
+            grid_refinement_factor: 2
+            patch_refined_grid: true
+          - dims: ["NormalDist::mu"]
+            grid_points: [50]
+        # Optional ProfileProjector tuning (paraprof defaults are used if omitted).
+        roi_threshold: 4.0
+        pop_per_grid_point: 3
+        n_initial_optimizations: 40
+        max_patching_waves: 10
+        lbfgsb_max_iter: 20
+        lbfgsb_polish: true
+        use_clustering: true
+        refinement_direct_eval: false
+        # samples_output_file: paraprof_samples.csv
+        # Paraprof-side diagnostic plots.
+        save_plots: true
+        plot_settings:
+          dpi: 200
+          filetype: png
+          # Contour levels drawn on the 2D/N-D profile log-likelihood plots,
+          # expressed as log L - log L_best-fit. Defaults to [-3.0, -1.0]
+          # (~68% and ~95% CL for a 1-d.o.f. chi-squared approximation).
+          contour_levels: [-4.5, -3.0, -1.0]
+
 
 ObsLikes:
 
