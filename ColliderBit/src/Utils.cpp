@@ -54,7 +54,7 @@ namespace Gambit
       else
       {
         ColliderBit_error().raise(LOCAL_INFO, "Could not find jet algorithm in list available. Please add the missing option to the FJalgorithm_map function in ColliderBit/src/Utils.cpp.");
-	result = FJNS::antikt_algorithm; // silence a warning
+        result = FJNS::antikt_algorithm; // silence a warning
       }
       return result;
     }
@@ -67,7 +67,7 @@ namespace Gambit
       else
       {
         ColliderBit_error().raise(LOCAL_INFO, "Could not find jet strategy in list available. Please add the missing option to the FJstrategy_map function in ColliderBit/src/Utils.cpp.");
-	result = FJNS::Best; // silence a warning
+        result = FJNS::Best; // silence a warning
       }
       return result;
     }
@@ -81,7 +81,7 @@ namespace Gambit
       else
       {
         ColliderBit_error().raise(LOCAL_INFO, "Could not find jet recombination scheme in list available. Please add the missing option to the FJRecomScheme_map function in ColliderBit/src/Utils.cpp.");
-	result = FJNS::E_scheme; // silence a warning
+        result = FJNS::E_scheme; // silence a warning
       }
       return result;
     }
