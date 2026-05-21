@@ -352,30 +352,6 @@ Scanner:
         min_num_live_points: 1000
         dlogz: 0.5
 
-    binminpy:
-      like: LogLike
-      plugin: binminpy
-      run:
-        n_bins:
-          # For any parameters not listed under 'n_bins' binminpy will assume a single bin
-          NormalDist::mu: 100
-          NormalDist::sigma: 100
-        # sampled_parameters: ["NormalDist::mu", "NormalDist::sigma"]  # By default parameters are optimized within each bin
-        sampler: "latinhypercube"
-        optimizer: "minimize"
-        optimizer_kwargs:
-          method: "L-BFGS-B"
-          tol: 1e-4
-        n_initial_points: 10
-        n_sampler_points_per_bin: 10
-        # accept_loglike_above: -30.0
-        accept_delta_loglike: 6.5
-        neighborhood_distance: 2
-        inherit_best_init_point_within_bin: False
-        n_optim_restarts_per_bin: 1
-        n_tasks_per_batch: 1
-        print_progress_every_n_batch: 100
-
     paraprof:
       like: LogLike
       plugin: paraprof

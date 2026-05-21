@@ -216,7 +216,7 @@ only the loglike value, so L-BFGS-B uses finite differences.
 
 
     def _print_summary(self, results):
-        """Emit a per-projection summary on rank 0, in the binminpy/scipy style."""
+        """Emit a per-projection summary on rank 0, in the scipy style."""
         prefix = self.print_prefix
         print()
         print(f"{prefix} === Scan summary ===", flush=True)
