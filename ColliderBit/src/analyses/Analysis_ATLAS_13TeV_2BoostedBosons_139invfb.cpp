@@ -204,7 +204,7 @@ namespace Gambit
             // Tag SM Higgs
             #ifdef CHECK_CUTFLOW
               if( jet->tagged(25) && random_bool( _eff1dH.get_at( jet->pT() )  ) ) nH++;
-	    #endif
+            #endif
             // Misstag as Z or W
             if( !jet->tagged(23) && !jet->tagged(24) )
             {
