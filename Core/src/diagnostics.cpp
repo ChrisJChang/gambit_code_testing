@@ -35,6 +35,7 @@
 #include "gambit/Utils/util_functions.hpp"
 #include "gambit/cmake/cmake_variables.hpp"
 
+#include <boost/algorithm/string/replace.hpp>
 #include <memory>
 #include <string>
 

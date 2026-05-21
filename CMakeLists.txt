@@ -430,6 +430,9 @@ else()
     set(HAVE_MATHEMATICA 0)
   endif()
 endif()
+if(NOT HAVE_MATHEMATICA)
+  set(itch "${itch};LibMathematicaTest")
+endif()
 
 # Check for DL libraries
 include(cmake/FindLibDL.cmake)
