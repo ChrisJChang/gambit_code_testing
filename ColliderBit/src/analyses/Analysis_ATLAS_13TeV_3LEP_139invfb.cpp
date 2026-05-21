@@ -185,13 +185,13 @@ namespace Gambit
           // Baseline electrons
           #ifdef CHECK_CUTFLOW
             int nFilterLeptons = 0;  // This is just for checking ATLAS event generation
-	  #endif
+          #endif
           vector<const HEPUtils::Particle*> baselineElectrons;
           for (const HEPUtils::Particle* electron : event->electrons())
           {
             if (electron->pT() > 4.5 && fabs(electron->eta()) < 2.47)
             {
-	      #ifdef CHECK_CUTFLOW
+              #ifdef CHECK_CUTFLOW
                 nFilterLeptons++;
               #endif
               baselineElectrons.push_back(electron);
