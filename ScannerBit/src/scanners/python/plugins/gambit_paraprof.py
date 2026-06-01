@@ -22,7 +22,7 @@ Python environment GAMBIT is using.
 import numpy as np
 
 from scannerbit import with_mpi as scannerbit_with_mpi
-from utils import copydoc, version, with_mpi
+from utils import copydoc, version, get_directory, with_mpi
 
 try:
     import paraprof
@@ -159,6 +159,18 @@ only the loglike value, so L-BFGS-B uses finite differences.
         # Plot / output controls (paraprof-side, not GAMBIT printer side).
         self.save_plots = bool(ra.get("save_plots", False))
         self.plot_settings = ra.get("plot_settings", None)
+
+        # Direct paraprof's plots into the dedicated ScannerBit output folder
+        # <default_output_path>/paraprof/. Plots are only written by rank 0.
+        if self.save_plots and self.mpi_rank == 0:
+            if self.plot_settings is None:
+                self.plot_settings = {}
+            else:
+                self.plot_settings = dict(self.plot_settings)  # defensive copy
+            # Only set output_dir if the user didn't pin one explicitly.
+            self.plot_settings.setdefault(
+                "output_dir", get_directory(self.__plugin_name__, **kwargs)
+            )
 
 
     @copydoc(paraprof_ProfileProjector)
