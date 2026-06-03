@@ -36,6 +36,9 @@
   (map_intpair_dbl)         \
 
 
+#define SQL_BACKEND_TYPES             \
+  (DM_nucleon_couplings)              \
+  (BBN_container)                     \
 
 
 #endif

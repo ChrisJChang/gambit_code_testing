@@ -19,6 +19,7 @@
 #ifndef __printable_types_hpp__
 #define __printable_types_hpp__
 
+#include "gambit/Elements/types_rollcall.hpp"
 #include "gambit/ScannerBit/printable_types.hpp"
 
 // Types that Gambit printers can output (if printer plugin is properly equipped)
@@ -28,7 +29,10 @@
   (map_str_map_str_dbl)               \
   (map_const_str_map_const_str_dbl)   \
   (map_intpair_dbl)                   \
-  (triplet<double>)
+  (triplet<double>)                   \
+  (flav_prediction)                   \
+  (DM_nucleon_couplings)              \
+  (BBN_container)
 
 // Types that can be retrieved from Gambit printer output (if printer plugin is properly equipped)
 // Generally needs to be the same as the printable types, i.e. should be able to retrieve everything.
