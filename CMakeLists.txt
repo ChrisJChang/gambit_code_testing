@@ -610,6 +610,30 @@ include(cmake/externals.cmake)
 
 string (REPLACE ";" "," itch_with_commas "${itch}")
 
+# Prototype: link-time (self-registering) module registration.  Migrated Bits compile
+# their own in-core rollcall macro expansions into a per-Bit registration translation
+# unit (<Bit>/registration/<Bit>_registration.cpp) that is linked only into the gambit
+# executable, instead of having their rollcall headers #included into the Core via the
+# generated module_rollcall.hpp.  Editing a migrated Bit's rollcall header then
+# recompiles only that Bit's objects (plus a relink), not the Core.
+option(LINK_TIME_REGISTRATION "Register migrated Bits' module functors with the Core at link time instead of compiling their rollcall headers into the Core" OFF)
+set(LINK_TIME_REGISTRATION_BITS "")
+if(LINK_TIME_REGISTRATION)
+  # Bits migrated to link-time registration so far.  A Bit can only be listed here if
+  # it has a registration translation unit at <Bit>/registration/<Bit>_registration.cpp.
+  foreach(bit ExampleBit_A)
+    if(";${GAMBIT_BITS};" MATCHES ";${bit};")
+      list(APPEND LINK_TIME_REGISTRATION_BITS ${bit})
+    endif()
+  endforeach()
+endif()
+if(LINK_TIME_REGISTRATION_BITS)
+  message("${BoldYellow}-- Link-time registration enabled for: ${LINK_TIME_REGISTRATION_BITS}${ColourReset}")
+  add_definitions(-DLINK_TIME_REGISTRATION=1)
+  string(REPLACE ";" "," ltr_bits_with_commas "${LINK_TIME_REGISTRATION_BITS}")
+  set(MODULE_HARVESTER_EXTRA_ARGS -r ${ltr_bits_with_commas})
+endif()
+
 if(EXISTS "${PROJECT_SOURCE_DIR}/Elements/")
   add_gambit_custom(module_harvest modules_harvested MODULE_HARVESTER MODULE_HARVESTER_FILES ${itch_with_commas})
 endif()
