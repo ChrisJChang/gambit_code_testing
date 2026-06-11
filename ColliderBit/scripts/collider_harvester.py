@@ -46,6 +46,9 @@ def main(argv):
         verbose = True
         print('collider_harvester.py: verbose=True')
 
+    # Make sure the scratch directory for candidate files exists (it may not when running this script standalone)
+    if not os.path.isdir("./scratch/build_time"): os.makedirs("./scratch/build_time")
+
     # Get list of models to include in ColliderBit_model_rollcall.hpp
     model_headers.update(retrieve_generic_headers(verbose,"./ColliderBit/include/gambit/ColliderBit/models","model", set()))
 
@@ -78,8 +81,11 @@ def main(argv):
     for h in model_headers:
         towrite+='#include \"gambit/ColliderBit/models/{0}\"\n'.format(h)
 
-    with open("./ColliderBit/include/gambit/ColliderBit/ColliderBit_models_rollcall.hpp","w") as f:
-        f.write(towrite)
+    # Don't touch any existing file unless it is actually different from what we will create
+    header = "./ColliderBit/include/gambit/ColliderBit/ColliderBit_models_rollcall.hpp"
+    candidate = "./scratch/build_time/ColliderBit_models_rollcall.hpp.candidate"
+    with open(candidate,"w") as f: f.write(towrite)
+    update_only_if_different(header, candidate)
 
     # Generate a C++ header containing Py8Collider typedefs for all the model headers we have just harvested.
     towrite = """//   GAMBIT: Global and Modular BSM Inference Tool
@@ -130,8 +136,11 @@ namespace Gambit
 
     towrite+="    #endif\n    /// @}\n\n  }\n}\n"
 
-    with open("./ColliderBit/include/gambit/ColliderBit/colliders/Pythia8/Py8Collider_typedefs.hpp","w") as f:
-        f.write(towrite)
+    # Don't touch any existing file unless it is actually different from what we will create
+    header = "./ColliderBit/include/gambit/ColliderBit/colliders/Pythia8/Py8Collider_typedefs.hpp"
+    candidate = "./scratch/build_time/Py8Collider_typedefs.hpp.candidate"
+    with open(candidate,"w") as f: f.write(towrite)
+    update_only_if_different(header, candidate)
 
     if verbose:
         print("\nGenerated ColliderBit_models_rollcall.hpp.")
