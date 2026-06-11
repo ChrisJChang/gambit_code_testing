@@ -127,16 +127,31 @@ On the legacy path the same touch additionally recompiles `Core/src/gambit.cpp`
 ## Measurements
 
 Build configuration: `-DBits="ExampleBit_A;ExampleBit_B" -DWITH_MPI=Off
--DCMAKE_BUILD_TYPE=Release`, GCC 13.3, 4 cores. Experiment:
+-DCMAKE_BUILD_TYPE=Release`, GCC 13.3, 4 cores. Experiment (after a full build
+and a no-op `make gambit` showing 0 recompilations):
 `touch ExampleBit_A/include/gambit/ExampleBit_A/ExampleBit_A_rollcall.hpp && time make gambit`.
 
 | | legacy (`OFF`) | link-time (`ON`) |
 |---|---|---|
-| objects recompiled | (see build logs) | (see build logs) |
-| wall time | (see build logs) | (see build logs) |
+| objects recompiled | `ExampleBit_A.cpp.o`, **`Core/src/gambit.cpp.o`**, link | `ExampleBit_A.cpp.o`, `ExampleBit_A_registration.cpp.o`, link |
+| wall time | 1m50.4s | 0m23.6s |
 
-(Filled in from the captured logs in the final commit; see
-`doc/link_time_registration_logs/`.)
+Raw logs: `doc/link_time_registration_logs/`. The Core's largest TU no longer
+rebuilds; the gap grows with the number/size of Bits in the build (this
+configuration contains only the two small ExampleBits — in a full build,
+`gambit.cpp` expands every Bit's rollcall header).
+
+Runtime equivalence (same configuration, `spartan.yaml` with the built-in
+`random` scanner standing in for the external `diver`): both configurations
+register exactly 240 module functors and 84 backend functors, the logged
+masterGraph functor table (origin, function, capability, type, status, #deps,
+#backend-reqs) is byte-identical, and the dependency-resolution log content
+(candidate vertices, applied rules, evaluation order) is identical after
+stripping timestamps. Remaining log differences are unseeded scanner
+randomness, per-point runtime estimates, and printer-ID assignment order
+(registry iteration order shifts because ExampleBit_A now registers from its
+own TU — cosmetic; see Caveats). `make ExampleBit_A_standalone` builds and
+runs successfully in both configurations.
 
 ## What remains to migrate a real Bit
 
@@ -173,8 +188,16 @@ Things that stay central (deliberately, for now):
   rollcall header top-to-bottom, as before. *Across* modules the order is now
   unspecified (link order in practice) instead of `module_rollcall.hpp` include
   order. Nothing in the Core depends on registration order (registries are
-  containers keyed/sorted downstream), but log lines such as the functor list
-  ordering may differ cosmetically between configurations.
+  containers keyed/sorted downstream), but iteration order over
+  `Core().getModuleFunctors()` shifts: observed as different (but internally
+  consistent) printer-ID assignments in the logs. Scan output labels and values
+  are unaffected.
+- **One-definition headers**: `Utils/static_members.hpp` *defines* static data
+  members and is pulled in by the in-core macro header, so a registration TU
+  would duplicate them against the main TU. It now honours
+  `GAMBIT_NO_STATIC_MEMBER_DEFINITIONS`, which registration TUs define. Any
+  future header that defines objects from the in-core context would need the
+  same treatment (this was the only one in the current tree).
 - **Standalones**: unchanged by construction (verified by building
   `ExampleBit_A_standalone` in both configurations).
 - **`QUICK_FUNCTION`-style ad-hoc declarations in the Core** would be a blocker if

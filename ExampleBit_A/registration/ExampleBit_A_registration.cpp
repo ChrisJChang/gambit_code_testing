@@ -37,6 +37,11 @@
 
 #ifdef LINK_TIME_REGISTRATION
 
+  /* The static members defined by static_members.hpp (pulled in via the in-core
+     macros) are provided by the main gambit translation unit; defining them here
+     too would break the link with duplicate definitions. */
+  #define GAMBIT_NO_STATIC_MEMBER_DEFINITIONS 1
+
   #include "gambit/Elements/module_macros_incore.hpp"
   #include "gambit/ExampleBit_A/ExampleBit_A_rollcall.hpp"
 
