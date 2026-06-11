@@ -78,7 +78,7 @@ def main(argv):
                                                   
 """
 
-    for h in model_headers:
+    for h in sorted(model_headers):
         towrite+='#include \"gambit/ColliderBit/models/{0}\"\n'.format(h)
 
     # Don't touch any existing file unless it is actually different from what we will create
@@ -120,7 +120,7 @@ namespace Gambit
       typedef Py8Collider<Pythia_default::Pythia8::Pythia, Pythia_default::Pythia8::Event, void> Py8Collider_defaultversion;
 """
 
-    for h in model_headers:
+    for h in sorted(model_headers):
         if h not in ignore_model_headers:
             m = re.sub(".hpp", "", h)
             towrite+='      typedef Py8Collider<Pythia_{0}_default::Pythia8::Pythia, Pythia_{0}_default::Pythia8::Event, void> Py8Collider_{0}_defaultversion;\n'.format(m)
@@ -129,7 +129,7 @@ namespace Gambit
     #else                                         \n\
       typedef Py8Collider<Pythia_default::Pythia8::Pythia, Pythia_default::Pythia8::Event, Pythia_default::Pythia8::GAMBIT_hepmc_writer> Py8Collider_defaultversion;\n"
 
-    for h in model_headers:
+    for h in sorted(model_headers):
         if h not in ignore_model_headers:
             m = re.sub(".hpp", "", h)
             towrite+='      typedef Py8Collider<Pythia_{0}_default::Pythia8::Pythia, Pythia_{0}_default::Pythia8::Event, Pythia_{0}_default::Pythia8::GAMBIT_hepmc_writer> Py8Collider_{0}_defaultversion;\n'.format(m)
