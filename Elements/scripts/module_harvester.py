@@ -175,7 +175,7 @@ def main(argv):
 // Automatically-generated list of module types.  
 """
 
-    for h in module_type_headers:
+    for h in sorted(module_type_headers):
         towrite+="#include \"{0}\"\n".format(h)
     towrite+="""
 #endif // defined __module_types_rollcall_hpp__
@@ -300,7 +300,7 @@ def main(argv):
 namespace Gambit                                  
 {                                                 
 """
-    for tp in type_packs:
+    for tp in sorted(type_packs):
         towrite+="""
   template class backend_functor_common<{0}>;
   template class backend_functor<{0}>;""".format(tp)+"\n"
@@ -350,7 +350,7 @@ namespace Gambit
 namespace Gambit                                  
 {                                                 
 """
-    for t in types:
+    for t in sorted(types):
         towrite+="  template class module_functor<{0}>;\n".format(t)
     towrite+="""}
 
