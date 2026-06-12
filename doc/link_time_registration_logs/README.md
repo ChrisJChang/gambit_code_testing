@@ -43,3 +43,13 @@ Same protocol (full build, no-op `make gambit` showing 0 recompiles, then touch 
 The ExampleBit_A rows show the cross-Bit isolation effect: in the legacy path,
 adding a large Bit to the build makes every other Bit's rollcall edits pay that
 Bit's share of the `gambit.cpp` recompile.
+
+## Backends round
+
+Same configuration and protocol; experiment:
+`touch Backends/include/gambit/Backends/frontends/LibFirst_1_0.hpp && time make gambit`.
+
+| configuration | objects recompiled | wall time | log |
+|---|---|---|---|
+| legacy | `gambit.cpp.o` + link | 4m32.2s | `touch_be_legacy.log` |
+| link-time | `Backends_registration.cpp.o` + link | 0m55.2s | `touch_be_ltr.log` |
