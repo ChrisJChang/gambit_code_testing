@@ -182,11 +182,12 @@ backend functors registered):
 | touch | legacy (`OFF`) | link-time (`ON`) |
 |---|---|---|
 | `DarkBit_rollcall.hpp` | 30 DarkBit TUs + **`gambit.cpp`** + link, 33m12s | 30 DarkBit TUs + `DarkBit_registration.cpp` + link, 9m47s |
-| `ExampleBit_A_rollcall.hpp` | `ExampleBit_A.cpp` + **`gambit.cpp`** + link, (see logs) | `ExampleBit_A.cpp` + `ExampleBit_A_registration.cpp` + link, 0m49s |
+| `ExampleBit_A_rollcall.hpp` | `ExampleBit_A.cpp` + **`gambit.cpp`** + link, 25m41s | `ExampleBit_A.cpp` + `ExampleBit_A_registration.cpp` + link, 0m49s |
 
 In the full configuration the `gambit.cpp` recompile alone costs roughly
 twenty-five minutes on this machine, and the legacy path pays it for *every*
-rollcall edit in *any* Bit.
+rollcall edit in *any* Bit: a one-line change in the smallest Bit goes from
+25m41s to 49s (~31x).
 
 Runtime equivalence (same configuration, `spartan.yaml` with the built-in
 `random` scanner standing in for the external `diver`): both configurations

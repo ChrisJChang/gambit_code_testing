@@ -66,5 +66,5 @@ configurations, spartan smoke test passing in both.
 |---|---|---|---|---|
 | `DarkBit_rollcall.hpp` | legacy | 30 DarkBit TUs + `gambit.cpp.o` + link | 33m11.9s | `touch_db_legacy.log` |
 | `DarkBit_rollcall.hpp` | link-time | 30 DarkBit TUs + `DarkBit_registration.cpp.o` + link | 9m47.1s | `touch_db_ltr.log` |
-| `ExampleBit_A_rollcall.hpp` | legacy | `ExampleBit_A.cpp.o` + `gambit.cpp.o` + link | (see log) | `touch_eba_legacy_all.log` |
+| `ExampleBit_A_rollcall.hpp` | legacy | `ExampleBit_A.cpp.o` + `gambit.cpp.o` + link | 25m41.4s | `touch_eba_legacy_all.log` |
 | `ExampleBit_A_rollcall.hpp` | link-time | `ExampleBit_A.cpp.o` + `ExampleBit_A_registration.cpp.o` + link | 0m49.0s | `touch_eba_ltr_all.log` |
