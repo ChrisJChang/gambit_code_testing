@@ -141,6 +141,22 @@ rebuilds; the gap grows with the number/size of Bits in the build (this
 configuration contains only the two small ExampleBits — in a full build,
 `gambit.cpp` expands every Bit's rollcall header).
 
+With ColliderBit also in the build (`-DBits="ColliderBit;ExampleBit_A;ExampleBit_B"
+-DWITH_HEPMC=ON -DWITH_YODA=OFF`, same machine), repeating the experiments:
+
+| touch | legacy (`OFF`) | link-time (`ON`) |
+|---|---|---|
+| `ColliderBit_rollcall.hpp` | 23 ColliderBit TUs + **`gambit.cpp`** + link, 9m22s | 23 ColliderBit TUs + `ColliderBit_registration.cpp` + link, 7m04s |
+| `ExampleBit_A_rollcall.hpp` | `ExampleBit_A.cpp` + **`gambit.cpp`** + link, 4m57s | `ExampleBit_A.cpp` + `ExampleBit_A_registration.cpp` + link, 0m31s |
+
+Two observations. First, the cross-Bit isolation is the headline: once a big Bit
+is in the build, the legacy path makes *every* Bit's rollcall edit pay the
+full `gambit.cpp` recompile (ExampleBit_A: 4m57s → 31s, ~10x). Second, for the
+big Bit itself most of the remaining cost is its own 23 source files, which
+include the rollcall header and rebuild on either path — reducing that is a
+module-internal layout question (e.g. splitting rollcall includes), orthogonal
+to Core coupling.
+
 Runtime equivalence (same configuration, `spartan.yaml` with the built-in
 `random` scanner standing in for the external `diver`): both configurations
 register exactly 240 module functors and 84 backend functors, the logged
@@ -193,9 +209,19 @@ configurations*, so the legacy-vs-link-time comparison is unaffected, but the
 `EXCLUDE_YODA=0` sections of the measurements rollcall have not been exercised
 under link-time registration. They use the same macros as the rest of the tree
 (no new macro kinds), so no new failure mode is expected. CBS
-(`ColliderBit Solo`) requires HepMC + pybind11 and builds these days from its
-own standalone expansion, which is untouched by this change; it could not be
-smoke-tested here for the same environmental reason.
+(`ColliderBit Solo`) does not build in this YODA-less configuration in *either*
+mode — its main source unconditionally references the Rivet/Contur/nulike
+frontends, which the configuration excludes — verified to fail identically
+(same first error in `solo.cpp`) with the option OFF and ON, i.e. a property
+of the configuration, not of link-time registration. CBS links the ColliderBit
+object library plus its own in-core expansion from `standalone_module.hpp`,
+neither of which this change touches.
+
+Runtime equivalence with ColliderBit migrated: both configurations register
+exactly 463 module and 135 backend functors; the masterGraph functor table
+(464 rows, 214 of them ColliderBit) is byte-identical; the dependency
+resolution log differs only in timestamps, printer-ID assignment order and
+unseeded scanner output, as before.
 
 ## What remains to migrate a real Bit
 
