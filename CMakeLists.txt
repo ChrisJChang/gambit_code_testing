@@ -620,9 +620,10 @@ option(LINK_TIME_REGISTRATION "Register migrated Bits' module functors and the b
 set(LINK_TIME_REGISTRATION_BITS "")
 set(LINK_TIME_REGISTRATION_COMPONENTS "")
 if(LINK_TIME_REGISTRATION)
-  # Bits migrated to link-time registration so far.  A Bit can only be listed here if
-  # it has a registration translation unit at <Bit>/registration/<Bit>_registration.cpp.
-  foreach(bit ExampleBit_A ColliderBit)
+  # Bits migrated to link-time registration so far (now: all of them).  A Bit can
+  # only be listed here if it has a registration translation unit at
+  # <Bit>/registration/<Bit>_registration.cpp.
+  foreach(bit ColliderBit CosmoBit DarkBit DecayBit ExampleBit_A ExampleBit_B FlavBit NeutrinoBit ObjectivesBit PrecisionBit SpecBit)
     if(";${GAMBIT_BITS};" MATCHES ";${bit};")
       list(APPEND LINK_TIME_REGISTRATION_BITS ${bit})
     endif()
