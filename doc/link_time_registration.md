@@ -153,6 +153,50 @@ randomness, per-point runtime estimates, and printer-ID assignment order
 own TU — cosmetic; see Caveats). `make ExampleBit_A_standalone` builds and
 runs successfully in both configurations.
 
+## ColliderBit migration (second Bit, first non-trivial one)
+
+ColliderBit was migrated as the stress test: its rollcall is a tree of five
+sub-rollcall headers, two of which are *generated* at build time by
+`collider_harvester.py` (`ColliderBit_models_rollcall.hpp`,
+`Py8Collider_typedefs.hpp`); it is dense with conditional-compilation guards
+(`HAVE_PYBIND11`, `EXCLUDE_HEPMC`, `EXCLUDE_YODA`); it uses BOSSed Pythia types
+in backend requirements, loop-managed event-loop functors, model groups, and
+`NEEDS_CLASSES_FROM`. Findings:
+
+- **One real hidden coupling found and fixed**: the in-core expansions of
+  `NEEDS_CLASSES_FROM` (→ `set_classload_requirements`) and
+  `ACTIVATE_BACKEND_REQ_FOR_MODELS` (→ `set_backend_rule_for_model`) call
+  functions declared in `Backends/ini_functions.hpp`, which the in-core macro
+  header never included. The legacy path only compiles because `gambit.hpp`
+  happens to include `backend_rollcall.hpp` *before* `module_rollcall.hpp`.
+  `module_macros_incore_defs.hpp` now includes the declarations it uses, making
+  the in-core context self-contained. No other order-dependent declaration was
+  hit by the full ColliderBit rollcall tree.
+- **Config-guard consistency is automatic**: `HAVE_PYBIND11`, `EXCLUDE_HEPMC`
+  and `EXCLUDE_YODA` all come from the generated `cmake_variables.hpp`, so the
+  registration TU, the module objects and the (legacy) Core expansion always
+  agree on which rollcall sections exist.
+- **Generated sub-headers need no special handling**: the registration TU is a
+  source of the `gambit` target, which depends on the ColliderBit object
+  library, which depends on `collider_harvest` — the same transitive ordering
+  that protects `module_harvest` today.
+- The migration itself was exactly the advertised recipe: one two-include
+  registration TU plus one entry in `LINK_TIME_REGISTRATION_BITS`.
+
+### Validation environment caveat
+
+The validation build used `-DWITH_YODA=OFF` (a new, explicit opt-out added in
+this branch — the YODA tarball host is unreachable from the build sandbox;
+HepMC3 3.2.5 was supplied as the authentic md5-verified tarball). YODA-guarded
+measurement functions are therefore compiled out *identically in both
+configurations*, so the legacy-vs-link-time comparison is unaffected, but the
+`EXCLUDE_YODA=0` sections of the measurements rollcall have not been exercised
+under link-time registration. They use the same macros as the rest of the tree
+(no new macro kinds), so no new failure mode is expected. CBS
+(`ColliderBit Solo`) requires HepMC + pybind11 and builds these days from its
+own standalone expansion, which is untouched by this change; it could not be
+smoke-tested here for the same environmental reason.
+
 ## What remains to migrate a real Bit
 
 Per Bit, the migration recipe is mechanical:
