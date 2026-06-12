@@ -1,10 +1,15 @@
 # Link-time (self-registering) module registration — prototype
 
-CMake option: `-DLINK_TIME_REGISTRATION=On` (default `Off`). Migrated so far:
-**ExampleBit_A**, **ColliderBit**, and the **Backends** (all frontend headers).
-Everything else (the remaining Bits, and the Models) uses the legacy
-compile-time path, and the two mechanisms coexist so migration can proceed
-component by component.
+CMake option: `-DLINK_TIME_REGISTRATION=On` (default `Off`). Migrated:
+**all Bits** (ColliderBit, CosmoBit, DarkBit, DecayBit, ExampleBit_A,
+ExampleBit_B, FlavBit, NeutrinoBit, ObjectivesBit, PrecisionBit, SpecBit) and
+the **Backends** (all frontend headers).  With the option ON,
+`module_rollcall.hpp` contains no module rollcall headers at all and
+`gambit.hpp` no longer includes `backend_rollcall.hpp`; `gambit.cpp` expands
+only the model rollcall.  Only the **Models** remain on the legacy
+compile-time path; the two mechanisms coexist (the option defaults to OFF, and
+partially-migrated configurations work, as the incremental history of this
+branch demonstrates).
 
 ## The problem
 
@@ -169,6 +174,19 @@ With the backends also migrated, touching one frontend header
 
 (The frontend's own `.cpp`, when enabled in the configuration, rebuilds on
 either path.)
+
+With **all Bits** in the build (no `-DBits` restriction, `-DBUILD_FS_MODELS=None`,
+`-DWITH_HEPMC=ON -DWITH_YODA=OFF`, same machine; 1654 module functors and 1610
+backend functors registered):
+
+| touch | legacy (`OFF`) | link-time (`ON`) |
+|---|---|---|
+| `DarkBit_rollcall.hpp` | 30 DarkBit TUs + **`gambit.cpp`** + link, 33m12s | 30 DarkBit TUs + `DarkBit_registration.cpp` + link, 9m47s |
+| `ExampleBit_A_rollcall.hpp` | `ExampleBit_A.cpp` + **`gambit.cpp`** + link, (see logs) | `ExampleBit_A.cpp` + `ExampleBit_A_registration.cpp` + link, 0m49s |
+
+In the full configuration the `gambit.cpp` recompile alone costs roughly
+twenty-five minutes on this machine, and the legacy path pays it for *every*
+rollcall edit in *any* Bit.
 
 Runtime equivalence (same configuration, `spartan.yaml` with the built-in
 `random` scanner standing in for the external `diver`): both configurations

@@ -53,3 +53,18 @@ Same configuration and protocol; experiment:
 |---|---|---|---|
 | legacy | `gambit.cpp.o` + link | 4m32.2s | `touch_be_legacy.log` |
 | link-time | `Backends_registration.cpp.o` + link | 0m55.2s | `touch_be_ltr.log` |
+
+## All-Bits round
+
+Configuration: all Bits (no `-DBits` restriction), `-DBUILD_FS_MODELS=None
+-DWITH_HEPMC=ON -DWITH_YODA=OFF -DWITH_MPI=Off -DCMAKE_BUILD_TYPE=Release`,
+same machine.  1654 module functors + 1610 backend functors registered;
+module and backend functor tables byte-identical between the two
+configurations, spartan smoke test passing in both.
+
+| touch | configuration | objects recompiled | wall time | log |
+|---|---|---|---|---|
+| `DarkBit_rollcall.hpp` | legacy | 30 DarkBit TUs + `gambit.cpp.o` + link | 33m11.9s | `touch_db_legacy.log` |
+| `DarkBit_rollcall.hpp` | link-time | 30 DarkBit TUs + `DarkBit_registration.cpp.o` + link | 9m47.1s | `touch_db_ltr.log` |
+| `ExampleBit_A_rollcall.hpp` | legacy | `ExampleBit_A.cpp.o` + `gambit.cpp.o` + link | (see log) | `touch_eba_legacy_all.log` |
+| `ExampleBit_A_rollcall.hpp` | link-time | `ExampleBit_A.cpp.o` + `ExampleBit_A_registration.cpp.o` + link | 0m49.0s | `touch_eba_ltr_all.log` |
