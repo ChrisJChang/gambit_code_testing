@@ -1,4 +1,4 @@
-# Link-time (self-registering) module registration — prototype
+# Link-time (self-registering) module registration
 
 CMake option: `-DLINK_TIME_REGISTRATION=On` (default `Off`). Migrated:
 **all Bits** (ColliderBit, CosmoBit, DarkBit, DecayBit, ExampleBit_A,
@@ -75,7 +75,7 @@ the dependency resolver, the likelihood container and the diagnostics all operat
 purely on the runtime registries. There is no need for a new registry or registrar
 class: the entire fix is to *relocate the expansion into a TU owned by the module*.
 
-## What the prototype does
+## What this does
 
 With `-DLINK_TIME_REGISTRATION=On`:
 
@@ -201,9 +201,9 @@ randomness, per-point runtime estimates, and printer-ID assignment order
 own TU — cosmetic; see Caveats). `make ExampleBit_A_standalone` builds and
 runs successfully in both configurations.
 
-## ColliderBit migration (second Bit, first non-trivial one)
+## ColliderBit migration
 
-ColliderBit was migrated as the stress test: its rollcall is a tree of five
+ColliderBit was the stress test of this approach: its rollcall is a tree of five
 sub-rollcall headers, two of which are *generated* at build time by
 `collider_harvester.py` (`ColliderBit_models_rollcall.hpp`,
 `Py8Collider_typedefs.hpp`); it is dense with conditional-compilation guards
@@ -287,7 +287,7 @@ by `gambit.hpp`'s include order (backends before modules); with separate
 registration TUs the order is link-order, and the binary aborted pre-main
 ("The backend "Pythia" is not known to GAMBIT").
 
-Following the prototype design rule (record passively, defer real work),
+Following the design rule used throughout (record passively, defer real work),
 `set_classload_requirements` now applies the requirement immediately when the
 backend's version information is already available, and otherwise queues it;
 `backend_info::link_versions` retries the queue every time any backend
@@ -326,7 +326,7 @@ Things that stay central (deliberately, for now):
   functors (primary model parameter functors) use additional registration calls
   (`register_model_functor_core`, claw bookkeeping) but follow the same
   self-registering pattern, so the same relocation should work for
-  `Models/models/*.hpp` if wanted; it is out of scope of this prototype.
+  `Models/models/*.hpp` if wanted; it has not yet been done.
 - **Backends**: `backend_rollcall.hpp` likewise still compiles into the Core.
   Backend functors are registered through the same kind of static-init calls
   (`register_backend_functor` → `Core().registerBackendFunctor`), so the pattern

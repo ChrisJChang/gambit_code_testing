@@ -51,7 +51,7 @@ if(EXISTS "${PROJECT_SOURCE_DIR}/Core/")
     set(gambit_XTRA ${gambit_XTRA} ${YODA_LDFLAGS})
   endif()
   # Registration translation units for components using link-time registration
-  # (migrated Bits, and the backends as a whole).  These compile the in-core
+  # (the Bits, and the backends as a whole).  These compile the in-core
   # expansion of each component's rollcall header(s), and are linked only into
   # the gambit executable: standalone executables get equivalent functor
   # definitions from their own main translation unit (via standalone_module.hpp),

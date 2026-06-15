@@ -610,18 +610,18 @@ include(cmake/externals.cmake)
 
 string (REPLACE ";" "," itch_with_commas "${itch}")
 
-# Prototype: link-time (self-registering) module registration.  Migrated Bits compile
-# their own in-core rollcall macro expansions into a per-Bit registration translation
+# Link-time (self-registering) module registration.  Bits compile their own
+# in-core rollcall macro expansions into a per-Bit registration translation
 # unit (<Bit>/registration/<Bit>_registration.cpp) that is linked only into the gambit
 # executable, instead of having their rollcall headers #included into the Core via the
-# generated module_rollcall.hpp.  Editing a migrated Bit's rollcall header then
+# generated module_rollcall.hpp.  Editing a Bit's rollcall header then
 # recompiles only that Bit's objects (plus a relink), not the Core.
-option(LINK_TIME_REGISTRATION "Register migrated Bits' module functors and the backend functors with the Core at link time instead of compiling their rollcall headers into the Core" OFF)
+option(LINK_TIME_REGISTRATION "Register Bits' module functors and the backend functors with the Core at link time instead of compiling their rollcall headers into the Core" OFF)
 set(LINK_TIME_REGISTRATION_BITS "")
 set(LINK_TIME_REGISTRATION_COMPONENTS "")
 if(LINK_TIME_REGISTRATION)
-  # Bits migrated to link-time registration so far (now: all of them).  A Bit can
-  # only be listed here if it has a registration translation unit at
+  # Bits using link-time registration.  A Bit can only be listed here if it has
+  # a registration translation unit at
   # <Bit>/registration/<Bit>_registration.cpp.
   foreach(bit ColliderBit CosmoBit DarkBit DecayBit ExampleBit_A ExampleBit_B FlavBit NeutrinoBit ObjectivesBit PrecisionBit SpecBit)
     if(";${GAMBIT_BITS};" MATCHES ";${bit};")

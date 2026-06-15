@@ -26,13 +26,12 @@ For a more complete list of cmake variables, take a look in the file `CMakeCache
 -DBits="CosmoBit;DarkBit"                               # typical cosmology project
 
 
-# Register migrated Bits' module functors with the Core at link
-# time instead of compiling their rollcall headers into the Core:
-# LINK_TIME_REGISTRATION (On|Off, default Off)
-# Prototype; currently covers ExampleBit_A only. Editing a migrated
-# Bit's rollcall header then recompiles only that Bit's objects plus
-# a relink, rather than the Core's largest translation units.
-# See doc/link_time_registration.md.
+# Register Bits' module functors and the backend functors with the
+# Core at link time instead of compiling their rollcall headers into
+# the Core: LINK_TIME_REGISTRATION (On|Off, default Off)
+# Editing a Bit's rollcall header then recompiles only that Bit's
+# objects plus a relink, rather than the Core's largest translation
+# units. See doc/link_time_registration.md.
 -DLINK_TIME_REGISTRATION=On
 
 
