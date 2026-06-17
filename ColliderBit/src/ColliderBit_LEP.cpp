@@ -21,6 +21,9 @@
 ///          (t.e.gonzalo@fys.uio.no)
 ///  \date   2018 Feb
 ///
+///  \author Chris Chang
+///  \date   2026 Jun
+///
 ///  *********************************************
 
 #include <cmath>
@@ -86,7 +89,8 @@ namespace Gambit
 
 
     /// LEP limit likelihood function
-    double limit_LLike(double x, double x95, double sigma) {
+    double limit_LLike(double x, double x95, double sigma)
+    {
       /**
          @brief Incorporate theoretical uncertainty in a 95% limit
          @param x Predicted cross section
@@ -968,7 +972,8 @@ namespace Gambit
       }
     }
 
-    void L3_Gravitino_LLike(double& result) {
+    void L3_Gravitino_LLike(double& result)
+    {
       /**
          @brief L3 search for gravitinos at 207 GeV
 
