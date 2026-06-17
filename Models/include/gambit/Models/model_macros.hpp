@@ -32,7 +32,14 @@
 #include <boost/preprocessor/seq/for_each.hpp>
 
 #ifdef __model_rollcall_hpp__
+  // Models only ever register functors/dependencies over ModelParameters and
+  // double, so the in-core macro machinery does not need the full module +
+  // backend type rollcall here. Signal module_macros_incore_defs.hpp to pull in
+  // only the lightweight model-relevant types. (Core/standalone TUs that also
+  // need the full type set obtain it independently via the module rollcalls.)
+  #define GAMBIT_MODEL_ONLY_TYPES
   #include "gambit/Elements/module_macros_incore_defs.hpp"
+  #undef GAMBIT_MODEL_ONLY_TYPES
   #ifndef STANDALONE
     #include "gambit/Core/ini_functions.hpp"
   #endif

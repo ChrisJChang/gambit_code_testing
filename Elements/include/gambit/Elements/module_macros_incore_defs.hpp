@@ -63,7 +63,16 @@
 #include <map>
 
 #include "gambit/Elements/functors.hpp"
-#include "gambit/Elements/types_rollcall.hpp"
+// When this header is pulled in purely to register models (model_macros.hpp
+// defines GAMBIT_MODEL_ONLY_TYPES before including it), only the lightweight
+// model-relevant type set is needed. Otherwise pull in the full type rollcall.
+// Note: module rollcall headers include the full shared_types.hpp + their own
+// *_types.hpp directly, so module compilation never depends on this choice.
+#ifdef GAMBIT_MODEL_ONLY_TYPES
+  #include "gambit/Elements/types_rollcall_modelmacros.hpp"
+#else
+  #include "gambit/Elements/types_rollcall.hpp"
+#endif
 #include "gambit/Elements/module_macros_common.hpp"
 #include "gambit/Elements/safety_bucket.hpp"
 #include "gambit/Elements/ini_functions.hpp"
