@@ -3,10 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Why Gravity Resists Quantization — a PhD-level tour</title>
+<title>Why Gravity Won't Quantize — for a master's student</title>
 <script>
-  // Optional MathJax enhancement. If the CDN is blocked (sandboxed network),
-  // the page still reads fine: equations are written in Unicode as well.
   window.MathJax = { tex: { inlineMath: [['\\(','\\)']], displayMath: [['$$','$$']] },
                      svg: { fontCache: 'global' } };
 </script>
@@ -19,8 +17,8 @@
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);
-       font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
-  .wrap{max-width:980px;margin:0 auto;padding:32px 22px 120px;}
+       font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:32px 22px 120px;}
   h1{font-size:2.0rem;line-height:1.2;margin:.2em 0 .1em;letter-spacing:-.5px}
   h2{font-size:1.5rem;margin:2.4em 0 .4em;border-bottom:1px solid #243140;padding-bottom:.3em;color:#fff}
   h3{font-size:1.15rem;margin:1.6em 0 .3em;color:var(--accent)}
@@ -29,6 +27,8 @@
   code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
   code{background:#1b2430;padding:.08em .35em;border-radius:4px;color:#cfe6ff}
   .panel{background:var(--panel);border:1px solid #223040;border-radius:14px;padding:18px 20px;margin:18px 0}
+  .note{background:#10202a;border:1px solid #1d4150;border-radius:12px;padding:14px 18px;margin:16px 0}
+  .note b{color:#aee4ff}
   .fig{background:#0a0d12;border:1px solid #223040;border-radius:14px;padding:14px;margin:22px 0;text-align:center}
   .cap{color:var(--dim);font-size:.9rem;margin-top:8px;text-align:left}
   .cap b{color:var(--ink)}
@@ -36,8 +36,8 @@
   @media(max-width:720px){.grid2{grid-template-columns:1fr}}
   .tag{display:inline-block;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;
        padding:.18em .6em;border-radius:999px;border:1px solid #2c3a4a;color:var(--dim);margin-right:.4em}
-  .verdict{border-left:3px solid var(--warn);padding:.4em 0 .4em 14px;margin:.8em 0;color:#ffd7d7}
-  .win{border-left:3px solid var(--good);padding:.4em 0 .4em 14px;margin:.8em 0;color:#cffae0}
+  .verdict{border-left:3px solid var(--warn);padding:.4em 0 .4em 14px;margin:.7em 0;color:#ffd7d7}
+  .win{border-left:3px solid var(--good);padding:.4em 0 .4em 14px;margin:.7em 0;color:#cffae0}
   table{border-collapse:collapse;width:100%;margin:14px 0;font-size:.93rem}
   th,td{border:1px solid #243140;padding:8px 10px;text-align:left;vertical-align:top}
   th{background:#18222e;color:#fff}
@@ -51,333 +51,327 @@
   .toc a:hover{text-decoration:underline}
   .small{font-size:.86rem;color:var(--dim)}
   .eq{background:#0a0d12;border:1px dashed #2c3a4a;border-radius:8px;padding:10px 14px;margin:10px 0;overflow-x:auto}
+  .key{color:#ffcf6c;font-weight:600}
   hr{border:none;border-top:1px solid #243140;margin:30px 0}
-  sup{font-size:.7em}
+  dt{color:var(--accent);font-weight:600;margin-top:.6em}
+  dd{margin:0 0 .2em 0}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-<h1>Why gravity won't be quantized like everything else</h1>
-<p class="sub">A visual, PhD-level tour of the problem, the leading programs, why each stalls, and where the genuinely open frontier is. Calibrated for a particle theorist — graviton = <span style="color:var(--graviton)">gold wavy line</span>, matter = <span style="color:var(--matter)">blue line</span> throughout.</p>
+<h1>Why gravity refuses to be quantized</h1>
+<p class="sub">A build-it-up walkthrough for a master's student in particle physics. If you've met Feynman diagrams, the idea of renormalization, and the Einstein–Hilbert action, you have everything you need. New terms are defined as they appear.</p>
+
+<div class="note">
+<b>What you'll be able to say by the end:</b> why "just quantize gravity like QED" fails at a precise technical step; what each big research program (strings, loop quantum gravity, asymptotic safety, …) is actually <em>trying</em> to fix; why none is finished; and which newer directions look genuinely promising — including one that could be tested on a tabletop.
+</div>
 
 <div class="panel toc small">
 <b>Contents</b> &nbsp;
-<a href="#problem">1. The actual problem</a> ·
-<a href="#eft">2. GR as an EFT (what <em>does</em> work)</a> ·
-<a href="#string">3. String theory</a> ·
-<a href="#lqg">4. LQG / spin foams</a> ·
+<a href="#warmup">0. A 2-minute warm-up</a> ·
+<a href="#problem">1. Where it breaks</a> ·
+<a href="#eft">2. The good news (EFT)</a> ·
+<a href="#string">3. Strings</a> ·
+<a href="#lqg">4. Loop quantum gravity</a> ·
 <a href="#as">5. Asymptotic safety</a> ·
-<a href="#others">6. CDT, causal sets, Hořava</a> ·
-<a href="#emergent">7. Emergent / holographic gravity</a> ·
-<a href="#frontier">8. Under-explored directions</a> ·
-<a href="#table">9. Scorecard</a>
+<a href="#others">6. Discrete approaches</a> ·
+<a href="#emergent">7. Emergent gravity</a> ·
+<a href="#frontier">8. Promising new directions</a> ·
+<a href="#table">9. Cheat-sheet table</a>
 </div>
 
 <!-- ============================================================= -->
-<h2 id="problem">1. The problem isn't "quantize gravity" — it's the UV</h2>
+<h2 id="warmup">0. A two-minute warm-up: how a QFT can "fail"</h2>
+<p>In quantum field theory, a calculation of a process (say, two particles scattering) is a sum of Feynman diagrams. Diagrams with <b>loops</b> contain an integral over the momentum <code>k</code> circulating in the loop, and you have to integrate <code>k</code> all the way up to infinity. Those integrals often come out <b>infinite</b>.</p>
+<p><b>Renormalization</b> is the cure: you realize a few constants in your theory (a mass, a charge) were never the "true" values — they were placeholders. You absorb the infinities into a redefinition of those few constants, fix them once by experiment, and everything else becomes a finite prediction.</p>
+<dl>
+<dt>Renormalizable theory</dt>
+<dd>All infinities, at every loop order, can be absorbed by adjusting a <b>finite</b> number of constants already in the Lagrangian. QED, the Standard Model. → fully predictive.</dd>
+<dt>Non-renormalizable theory</dt>
+<dd>Each new loop order produces a <b>new kind</b> of infinity needing a <b>new</b> constant. To absorb them all you'd need infinitely many constants, i.e. infinitely many experiments. → predictive power gone at high energy.</dd>
+</dl>
+<p>The whole drama of quantum gravity is that <span class="key">gravity lands squarely in the second category</span>. The rest of this page is: why, and what to do about it.</p>
 
-<p>Everyone with a QFT background can quantize gravity at the linear level. Split the metric around a background,</p>
-<div class="eq">$$ g_{\mu\nu} = \bar g_{\mu\nu} + \sqrt{32\pi G}\,h_{\mu\nu}, \qquad [G] = M^{-2}\ \ (\hbar=c=1),$$</div>
-<p>and <span class="mono">h<sub>μν</sub></span> is a perfectly good massless spin-2 field. You get a graviton, a propagator, vertices, the works. The Feynman rules exist. The trouble is what happens in loops.</p>
+<!-- ============================================================= -->
+<h2 id="problem">1. Where it breaks — and why the culprit is one minus sign in a dimension</h2>
+
+<p>You can absolutely start quantizing gravity the naive way. Write the metric as flat spacetime plus a small ripple:</p>
+<div class="eq">$$ g_{\mu\nu} = \eta_{\mu\nu} + h_{\mu\nu}, $$</div>
+<p>where <code>η<sub>μν</sub></code> is flat (Minkowski) space and <code>h<sub>μν</sub></code> is a small field — the <b>graviton</b>. Plug this into the Einstein–Hilbert action and expand. You get a perfectly sensible quantum field: a massless, spin-2 particle, with a propagator and interaction vertices, just like the photon in QED — only with more indices. So far, so good.</p>
 
 <div class="fig">
 <svg viewBox="0 0 900 200" width="900" height="200" aria-label="graviton propagator and self-energy">
-  <!-- propagator -->
-  <text x="120" y="30" fill="#9fb0c0" font-size="14">graviton propagator</text>
-  <path id="wave1" d="M40,110 q10,-16 20,0 t20,0 t20,0 t20,0 t20,0 t20,0 t20,0 t20,0" fill="none" stroke="#ffcf6c" stroke-width="3"/>
+  <text x="60" y="30" fill="#9fb0c0" font-size="14">the graviton (a ripple in spacetime)</text>
+  <path d="M40,110 q10,-16 20,0 t20,0 t20,0 t20,0 t20,0 t20,0 t20,0 t20,0" fill="none" stroke="#ffcf6c" stroke-width="3"/>
   <text x="30" y="150" fill="#ffcf6c" font-size="20">h<tspan font-size="13" dy="4">μν</tspan></text>
-  <!-- one loop self energy -->
   <g transform="translate(360,0)">
-    <text x="60" y="30" fill="#9fb0c0" font-size="14">one-loop self-energy</text>
+    <text x="20" y="30" fill="#9fb0c0" font-size="14">a loop correction (the troublemaker)</text>
     <path d="M20,110 q8,-13 16,0 t16,0 t16,0" fill="none" stroke="#ffcf6c" stroke-width="3"/>
     <circle cx="110" cy="110" r="40" fill="none" stroke="#6cc6ff" stroke-width="3"/>
     <path d="M150,110 q8,-13 16,0 t16,0 t16,0" fill="none" stroke="#ffcf6c" stroke-width="3"/>
-    <text x="86" y="180" fill="#6cc6ff" font-size="13">matter / graviton in loop</text>
-    <text x="250" y="95" fill="#ff7a7a" font-size="22">∫d⁴k → Λ⁴, Λ²…</text>
+    <text x="86" y="180" fill="#6cc6ff" font-size="13">something runs around the loop</text>
+    <text x="250" y="100" fill="#ff7a7a" font-size="20">∫d⁴k → ∞</text>
+    <text x="250" y="125" fill="#ff7a7a" font-size="13">and it can't be tamed</text>
   </g>
 </svg>
-<div class="cap"><b>Fig 1.</b> The graviton lives, but every loop integral is dressed with a factor of <code>G·E²</code>. Because <code>G</code> carries inverse-mass-squared dimension, each additional loop costs more powers of energy: the theory is <b>perturbatively non-renormalizable</b> by power counting.</div>
+<div class="cap"><b>Fig 1.</b> Left: the graviton, the quantum of the gravitational field. Right: as soon as you compute a loop, you get an integral over the loop momentum that diverges — and (unlike QED) the divergence keeps changing character at each order.</div>
 </div>
 
-<h3>The hard fact: divergences you cannot absorb</h3>
-<p>In a renormalizable theory (QED, QCD) all UV divergences are mopped up by a <em>finite</em> set of counterterms already present in the Lagrangian. In gravity, dimensional analysis forces new, higher-derivative counterterms at every loop order. The milestones every particle theorist should know:</p>
+<h3>The smoking gun: just look at the dimensions</h3>
+<p>Here's the cleanest way to see the problem, using only dimensional analysis. Work in natural units (<code>ℏ=c=1</code>), where everything is measured in powers of energy/mass. The strength of gravity is Newton's constant <code>G</code>, and crucially:</p>
+<div class="eq">$$ G = \frac{1}{M_{\rm Pl}^2},\qquad M_{\rm Pl}\approx 1.2\times10^{19}\ \text{GeV}. $$</div>
+<p>So <b><code>G</code> has dimensions of (energy)<sup>–2</sup></b>. Compare with QED, whose coupling is the fine-structure constant <code>α</code> — a pure number, dimensionless. That single difference is the entire problem. Here's why.</p>
 
+<div class="panel">
+<p>Every extra loop in a gravity diagram brings one more factor of <code>G</code>. But amplitudes are dimensionless-ish quantities; the <code>G</code> has to be compensated by something with dimensions of (energy)<sup>+2</sup>. At high energy the only scale around is the energy <code>E</code> itself, so each loop comes weighted by</p>
+<div class="eq">$$ G\,E^2 = \left(\frac{E}{M_{\rm Pl}}\right)^{2}. $$</div>
+<p>At everyday energies this is absurdly tiny (gravity is weak!). But as <code>E → M<sub>Pl</sub></code> it becomes order 1, and <em>higher</em> loops grow <em>faster</em>. The expansion blows up. In QED, by contrast, the coupling is a fixed small number that never grows like this — that's the whole difference between renormalizable and not.</p>
+</div>
+
+<h3>It's not hand-waving — it was computed</h3>
+<p>People proved this concretely:</p>
 <ul>
-<li><b>'t Hooft &amp; Veltman (1974):</b> pure gravity is one-loop finite <em>on-shell</em> — the only available counterterms (<span class="mono">R²</span>, <span class="mono">R<sub>μν</sub>²</span>) vanish by the vacuum equations of motion. A tantalizing near-miss. Add <em>any</em> matter and even one loop diverges.</li>
-<li><b>Goroff &amp; Sagnotti (1986):</b> pure gravity diverges at <b>two loops</b>, with a non-removable counterterm</li>
+<li><b>1974, 't Hooft &amp; Veltman:</b> pure gravity (no matter) is miraculously <em>finite at one loop</em> — the would-be infinite terms happen to vanish when you use the equations of motion. A famous near-miss. Add any matter (electrons, etc.) and even one loop diverges.</li>
+<li><b>1986, Goroff &amp; Sagnotti:</b> at <b>two loops</b>, pure gravity diverges with an infinity that <em>cannot</em> be absorbed by any constant in Einstein's theory. You'd need to add a brand-new term to the action — and then another at three loops, and so on forever.</li>
 </ul>
 
-<div class="eq">$$ \Gamma^{(2)}_{\infty} = \frac{1}{\varepsilon}\,\frac{209}{2880}\,\frac{1}{(16\pi^2)^2}\int d^4x\,\sqrt{-g}\;
-C_{\mu\nu}{}^{\rho\sigma}C_{\rho\sigma}{}^{\alpha\beta}C_{\alpha\beta}{}^{\mu\nu}.$$</div>
-
 <div class="fig">
-<svg viewBox="0 0 760 220" width="760" height="220" aria-label="Goroff-Sagnotti two-loop diagram">
-  <text x="250" y="28" fill="#9fb0c0" font-size="14">Goroff–Sagnotti two-loop R³ divergence</text>
-  <!-- external gravitons -->
+<svg viewBox="0 0 760 210" width="760" height="210" aria-label="Goroff-Sagnotti two-loop diagram">
+  <text x="170" y="26" fill="#9fb0c0" font-size="14">The two-loop diagram that sank naive quantum gravity (Goroff–Sagnotti 1986)</text>
   <path d="M40,120 q8,-13 16,0 t16,0 t16,0 t16,0" fill="none" stroke="#ffcf6c" stroke-width="3"/>
   <path d="M640,120 q8,-13 16,0 t16,0 t16,0 t16,0" fill="none" stroke="#ffcf6c" stroke-width="3"/>
-  <!-- sunset-like two loops -->
   <circle cx="300" cy="120" r="60" fill="none" stroke="#6cc6ff" stroke-width="3"/>
   <circle cx="420" cy="120" r="60" fill="none" stroke="#6cc6ff" stroke-width="3"/>
-  <path d="M360,120 h0" />
   <line x1="360" y1="60" x2="360" y2="180" stroke="#6cc6ff" stroke-width="3"/>
   <circle cx="240" cy="120" r="4" fill="#ffcf6c"/>
   <circle cx="480" cy="120" r="4" fill="#ffcf6c"/>
-  <text x="300" y="210" fill="#ff7a7a" font-size="18" text-anchor="middle">∝ ∫ C³  — needs a brand-new term not in the Einstein–Hilbert action</text>
+  <text x="380" y="205" fill="#ff7a7a" font-size="15" text-anchor="middle">its infinity needs a NEW term not present in Einstein gravity ⇒ non-renormalizable</text>
 </svg>
-<div class="cap"><b>Fig 2.</b> The famous <span class="mono">C³</span> (Weyl-cubed) counterterm. Its coefficient is non-zero and physical, so Einstein gravity is genuinely not a fundamental QFT in the Wilsonian sense. You'd need an infinite tower of measured coefficients — zero predictivity.</div>
+<div class="cap"><b>Fig 2.</b> Two gravitons come in and out (gold), with a two-loop blob of internal lines (blue). The result is infinite in a way Einstein's theory can't absorb. This is the concrete proof that you cannot treat gravity as "just another QFT."</div>
 </div>
 
-<h3>Three ways to read "non-renormalizable"</h3>
-<div class="panel">
-<p><b>(a) Predictivity death.</b> Infinitely many counterterms ⇒ infinitely many measurements to fix them. At <code>E ≳ M<sub>Pl</sub> ≈ 1.2×10¹⁹ GeV</code> they all matter at once.</p>
-<p><b>(b) Unitarity / strong coupling.</b> Tree-level graviton–graviton scattering grows like <code>G·E² = (E/M<sub>Pl</sub>)²</code>. The partial-wave unitarity bound is violated near <code>M<sub>Pl</sub></code> — a signal that new physics (or non-perturbative resummation) <em>must</em> intervene, exactly as <code>WW</code> scattering foretold the Higgs.</p>
-<p><b>(c) Conceptual.</b> Even setting renormalizability aside, gravity is special: the metric is the dynamical background, so there is no fixed spacetime to define <code>S</code>-matrix asymptotics, no preferred time slicing (the "problem of time" in canonical quantization), diffeomorphism-invariant local observables are scarce, and black holes threaten unitarity (information paradox) and bring in horizon thermodynamics with <code>S = A/4G</code>. These are the conceptual reasons a particle theorist's reflexes are not enough.</p>
+<h3>Three ways to feel the failure</h3>
+<div class="grid2">
+<div class="panel"><b>1. Predictions die.</b> Infinitely many constants to fix = infinitely many experiments needed. Near <code>M<sub>Pl</sub></code> the theory tells you nothing.</div>
+<div class="panel"><b>2. Probabilities exceed 1.</b> Graviton–graviton scattering grows like <code>(E/M<sub>Pl</sub>)²</code> and eventually predicts probabilities bigger than one — impossible. Something <em>must</em> replace the theory before then. (See Animation 1.)</div>
 </div>
+<div class="note"><b>3. The conceptual headaches (gravity is genuinely different).</b> Even ignoring the infinities, gravity isn't a field living <em>on</em> spacetime — it <em>is</em> spacetime. That breaks the usual QFT setup: there's no fixed background to define "in" and "out" states against, no universal clock (the "problem of time"), and black holes seem to destroy information while carrying an entropy <code>S = A/4G</code> that nobody put in by hand. These are clues, not just obstacles.</div>
 
 <div class="fig">
 <canvas id="unitarity" width="860" height="240"></canvas>
 <div class="legend">
-  <span><span class="swatch" style="border-color:#6cc6ff"></span>tree amplitude ~ (E/M<sub>Pl</sub>)²</span>
-  <span><span class="swatch" style="border-color:#ff7a7a;border-top-style:dashed"></span>unitarity bound</span>
+  <span><span class="swatch" style="border-color:#6cc6ff"></span>strength of graviton scattering ~ (E/M<sub>Pl</sub>)²</span>
+  <span><span class="swatch" style="border-color:#ff7a7a;border-top-style:dashed"></span>"probability = 1" ceiling</span>
   <button class="btn" onclick="restartUnitarity()">▶ replay</button>
 </div>
-<div class="cap"><b>Animation 1.</b> Perturbative graviton scattering climbing toward — and crashing through — the unitarity bound near the Planck scale. Every quantum-gravity program is, at bottom, a proposal for what saves unitarity here.</div>
+<div class="cap"><b>Animation 1.</b> The strength of gravitational scattering climbs with energy and smashes through the ceiling where probabilities would exceed 1, right around the Planck scale. Every theory below is really a different answer to: <em>"what takes over here?"</em> (For comparison: the same kind of runaway in W-boson scattering correctly predicted the Higgs.)</div>
 </div>
 
 <!-- ============================================================= -->
-<h2 id="eft">2. What <em>does</em> work: GR as an effective field theory</h2>
-<p>Crucially, non-renormalizable ≠ useless. Donoghue's program treats GR as a Wilsonian EFT with the Einstein–Hilbert term as the leading operator and the higher-curvature terms as suppressed by <code>M<sub>Pl</sub></code>. The non-analytic (long-distance) pieces of loops are <em>unambiguous, parameter-free predictions</em>:</p>
-<div class="eq">$$ V(r) = -\frac{G m_1 m_2}{r}\left[\,1 + \underbrace{3\frac{G(m_1+m_2)}{r c^2}}_{\text{classical GR}} + \underbrace{\frac{41}{10\pi}\frac{G\hbar}{r^2 c^3}}_{\text{genuine quantum correction}} + \dots\right].$$</div>
-<div class="win">The leading quantum correction to Newton's potential is a real, calculable number. So the question is <b>not</b> "is gravity quantum-mechanical?" — perturbative quantum gravity is fine and tested-in-principle below <code>M<sub>Pl</sub></code>. The open problem is the <b>UV completion</b>: what replaces the EFT once <code>E → M<sub>Pl</sub></code>.</div>
-<p>Everything below is a candidate UV completion (or a claim that the UV looks radically unlike a continuum QFT).</p>
+<h2 id="eft">2. The good news first: gravity as an effective theory</h2>
+<p>"Non-renormalizable" sounds fatal, but it isn't — it just means the theory has an <b>expiry date</b> in energy. An <b>effective field theory (EFT)</b> is a theory you trust only below some scale, here <code>M<sub>Pl</sub></code>. Below that scale, treating gravity quantum-mechanically works fine and even makes clean predictions. For example, the quantum-corrected Newton potential between two masses is:</p>
+<div class="eq">$$ V(r) = -\frac{G m_1 m_2}{r}\Big[\,1 + (\text{tiny GR correction}) + \underbrace{\tfrac{41}{10\pi}\tfrac{G\hbar}{r^2c^3}}_{\text{a real quantum effect}} + \dots\Big]. $$</div>
+<div class="win">That <code>41/10π</code> is a genuine, unambiguous prediction of quantum gravity — no free parameters. So the question is <b>not</b> "is gravity quantum?" Below the Planck scale we already know how to do it. The unsolved problem is what happens <b>at and above</b> <code>M<sub>Pl</sub></code> — the "UV completion." Everything below is a candidate answer.</div>
 
 <!-- ============================================================= -->
 <h2 id="string"><span class="tag">candidate 1</span> String theory</h2>
-<p>The string idea attacks divergence (a) and (b) at the root: replace the point interaction vertex — the source of the UV-localized loop integral — with an extended object whose interactions are <em>smeared</em> over the worldsheet. The graviton is not postulated; it is the massless spin-2 mode of the closed string, and general covariance emerges as a worldsheet consistency (Weyl-invariance ⇒ <code>β<sub>μν</sub> = R<sub>μν</sub> + … = 0</code>, i.e. Einstein's equations as the condition for a consistent background).</p>
+<p><b>The idea in one sentence:</b> the infinities come from interactions happening at a single point; so make particles into tiny <em>strings</em>, and the interaction gets smeared out, curing the infinities.</p>
+<p>In ordinary QFT a particle is a point tracing a line through spacetime (a "worldline"), and two of them meet at a sharp vertex — that sharpness is what makes loop integrals blow up. In string theory a particle is a little loop of string sweeping out a tube (a "worldsheet"), and when two strings merge the join is smooth. A wonderful bonus: one of the vibration modes of a closed string is automatically a massless spin-2 particle — i.e. the graviton drops out for free. Gravity isn't added; it's <em>required</em>.</p>
 
 <div class="fig">
 <canvas id="worldsheet" width="860" height="270"></canvas>
-<div class="cap"><b>Animation 2.</b> <b>Left:</b> a point-particle vertex — interaction localized at a single event, the seed of the UV divergence. <b>Right:</b> the closed-string "pair of pants" — the same topology but the splitting is smooth and Lorentz-frame-dependent in where it "happens", which exponentially softens UV behavior. This single picture is the physical heart of why string amplitudes are UV-finite order by order.</div>
+<div class="cap"><b>Animation 2.</b> <b>Left:</b> point particles meeting at a single sharp event — the origin of the infinities. <b>Right:</b> closed strings merging into the smooth "pair of pants." The same process, but with no single point where it happens, which is why string scattering stays finite. This picture <em>is</em> the core selling point of string theory.</div>
 </div>
 
 <div class="grid2">
-<div class="panel"><b>What it buys you</b>
+<div class="panel"><b>Why people love it</b>
 <ul>
-<li>UV-finite perturbative amplitudes; gravity unified with gauge forces and matter in one framework.</li>
-<li>A microscopic, parameter-free counting of black-hole entropy <code>S = A/4G</code> for (BPS) extremal holes — Strominger–Vafa, 1996. Genuinely a triumph.</li>
-<li><b>AdS/CFT</b> (Maldacena): a fully non-perturbative, manifestly unitary <em>definition</em> of quantum gravity in asymptotically-AdS space via a dual CFT. The most concrete handle we have on the information paradox and holography.</li>
+<li>Loop infinities are gone — finite quantum gravity, with matter and the other forces in the same framework.</li>
+<li>It correctly counts the entropy <code>S=A/4G</code> of certain black holes from microscopic states (Strominger–Vafa, 1996) — a real triumph.</li>
+<li><b>AdS/CFT:</b> in a universe with a particular curved boundary, gravity in the interior is <em>exactly equivalent</em> to an ordinary (non-gravitational) quantum theory on the boundary. This is our single best, fully-consistent definition of quantum gravity, and the main tool for the black-hole information problem.</li>
 </ul></div>
 <div class="panel"><b>Why people aren't satisfied</b>
 <ul>
-<li class="verdict">Requires <b>10 (or 11) dimensions</b> and, perturbatively, supersymmetry. Compactifying the extra six dimensions yields the <b>landscape</b>: ~10<sup>500</sup>+ vacua with no known selection principle ⇒ weak predictivity for our low-energy world.</li>
-<li class="verdict">It is most rigorously defined with a <b>fixed asymptotic background</b> (Minkowski/AdS). It is not manifestly <b>background-independent</b>, which many regard as the essence of GR.</li>
-<li class="verdict">No accepted, fully controlled construction of metastable <b>de Sitter</b> (our accelerating universe). The "swampland" debate is precisely about whether dS even exists in the theory.</li>
-<li class="verdict">No distinctive low-energy experimental signature at accessible energies.</li>
+<li class="verdict">It only works in <b>10 dimensions</b> (and needs supersymmetry). You must "curl up" the extra 6 dimensions — and there are something like 10<sup>500</sup> ways to do it (the <b>"landscape"</b>), with no principle picking ours. So it struggles to predict our specific low-energy world.</li>
+<li class="verdict">It's cleanest with a fixed spacetime backdrop — arguably against the spirit of GR, where spacetime is dynamical.</li>
+<li class="verdict">No agreed way to get our actual expanding (de Sitter) universe out of it.</li>
+<li class="verdict">No realistic experiment can reach the energies to test it directly.</li>
 </ul></div>
 </div>
 
 <!-- ============================================================= -->
-<h2 id="lqg"><span class="tag">candidate 2</span> Loop quantum gravity &amp; spin foams</h2>
-<p>The opposite philosophy: keep <em>exactly</em> four dimensions, no extra matter or symmetry, and take background independence as sacred. Recast GR in Ashtekar–Barbero connection variables (a gauge theory of <code>SU(2)</code>), then quantize canonically. The eigenstates are <b>spin networks</b> — graphs labeled by <code>SU(2)</code> reps. The punchline that excites people:</p>
-<div class="eq">$$ \hat A\,|j\rangle = 8\pi\gamma\,\ell_{\rm Pl}^2\sqrt{j(j+1)}\;|j\rangle,\qquad
-\hat V\,|{\rm node}\rangle = (\text{discrete spectrum}).$$</div>
-<p>Geometry is <b>quantized</b>: area and volume operators have discrete spectra with a built-in minimum length. The path-integral version sums over <b>spin foams</b> (histories of spin networks), e.g. the EPRL amplitude.</p>
+<h2 id="lqg"><span class="tag">candidate 2</span> Loop quantum gravity</h2>
+<p><b>The idea in one sentence:</b> don't add strings or extra dimensions — instead, take Einstein's theory seriously and quantize <em>spacetime geometry itself</em>, and discover that space comes in indivisible chunks.</p>
+<p>Here you rewrite GR in variables that look like a gauge theory (similar in spirit to QCD), then apply the rules of quantum mechanics to <em>geometry</em>. The states that come out are networks of lines and nodes called <b>spin networks</b>. The headline result: the operators for area and volume have <b>discrete spectra</b> — there is a smallest possible area (~ the Planck area), just as the hydrogen atom has discrete energy levels. Space is granular at the bottom.</p>
 
 <div class="fig">
 <svg viewBox="0 0 760 240" width="760" height="240" aria-label="spin network">
-  <text x="250" y="24" fill="#9fb0c0" font-size="14">a spin network: quanta of 3-geometry</text>
+  <text x="230" y="24" fill="#9fb0c0" font-size="14">a spin network: the "atoms" of space</text>
   <g stroke="#7CFFB0" stroke-width="3" fill="none">
-    <line x1="150" y1="120" x2="300" y2="70"/>
-    <line x1="150" y1="120" x2="300" y2="170"/>
-    <line x1="300" y1="70" x2="300" y2="170"/>
-    <line x1="300" y1="70" x2="470" y2="60"/>
-    <line x1="300" y1="170" x2="470" y2="190"/>
-    <line x1="470" y1="60" x2="470" y2="190"/>
-    <line x1="470" y1="60" x2="610" y2="120"/>
-    <line x1="470" y1="190" x2="610" y2="120"/>
-    <line x1="150" y1="120" x2="60" y2="120"/>
-    <line x1="610" y1="120" x2="700" y2="120"/>
+    <line x1="150" y1="120" x2="300" y2="70"/><line x1="150" y1="120" x2="300" y2="170"/>
+    <line x1="300" y1="70" x2="300" y2="170"/><line x1="300" y1="70" x2="470" y2="60"/>
+    <line x1="300" y1="170" x2="470" y2="190"/><line x1="470" y1="60" x2="470" y2="190"/>
+    <line x1="470" y1="60" x2="610" y2="120"/><line x1="470" y1="190" x2="610" y2="120"/>
+    <line x1="150" y1="120" x2="60" y2="120"/><line x1="610" y1="120" x2="700" y2="120"/>
   </g>
   <g fill="#ffcf6c">
     <circle cx="150" cy="120" r="7"/><circle cx="300" cy="70" r="7"/><circle cx="300" cy="170" r="7"/>
     <circle cx="470" cy="60" r="7"/><circle cx="470" cy="190" r="7"/><circle cx="610" cy="120" r="7"/>
   </g>
-  <g fill="#cfe6ff" font-size="13">
-    <text x="215" y="80">j=½</text><text x="305" y="125">j=1</text><text x="380" y="50">j=3/2</text>
-    <text x="540" y="80">j=1</text><text x="200" y="165">j=½</text>
-  </g>
-  <text x="120" y="125" fill="#9fb0c0" font-size="12" text-anchor="end">edge = quantum of area</text>
-  <text x="610" y="100" fill="#9fb0c0" font-size="12">node = quantum of volume</text>
+  <text x="120" y="112" fill="#9fb0c0" font-size="12" text-anchor="end">each line = a quantum of area</text>
+  <text x="618" y="100" fill="#9fb0c0" font-size="12">each node = a quantum of volume</text>
 </svg>
-<div class="cap"><b>Fig 3.</b> Spin networks are an orthonormal basis for the kinematical Hilbert space; edges carry area, nodes carry volume. Spacetime is not a smooth manifold at the bottom — it is a combinatorial, Planck-granular structure.</div>
+<div class="cap"><b>Fig 3.</b> In loop quantum gravity, a region of space is built from a spin network: lines carry definite amounts of area, nodes carry definite amounts of volume. There is no smooth space underneath — it's discrete, like pixels.</div>
 </div>
 
 <div class="grid2">
-<div class="panel"><b>What it buys you</b>
+<div class="panel"><b>Why people love it</b>
 <ul>
-<li>Manifestly background-independent and non-perturbative <em>by construction</em>.</li>
-<li>A concrete prediction of discrete geometry / minimal length; natural resolution of the big-bang singularity into a "bounce" in the symmetry-reduced setting (loop quantum cosmology).</li>
-<li>No extra dimensions, no SUSY required.</li>
+<li>It treats spacetime as dynamical from the start (no fixed background) — true to GR's spirit.</li>
+<li>A concrete, vivid prediction: space is discrete, with a smallest area.</li>
+<li>Applied to cosmology, the Big Bang singularity is replaced by a "bounce" — no infinite density.</li>
+<li>No extra dimensions, no supersymmetry needed.</li>
 </ul></div>
 <div class="panel"><b>Why people aren't satisfied</b>
 <ul>
-<li class="verdict"><b>The continuum limit is unsolved.</b> Nobody has convincingly shown that the discrete dynamics reproduces smooth 4D GR + a graviton with the right long-distance physics. This is the make-or-break gap.</li>
-<li class="verdict">The Hamiltonian constraint (Thiemann) has quantization ambiguities and its physical-state space and dynamics are hard to pin down.</li>
-<li class="verdict">Coupling Standard-Model <b>matter</b> is not as natural as in string theory; no unification story.</li>
-<li class="verdict">Tension/uncertainty around <b>Lorentz invariance</b>: a literal minimal length risks breaking boost invariance, which is tightly constrained by astrophysics.</li>
+<li class="verdict"><b>The big one:</b> nobody has convincingly shown that zooming out from these discrete networks gives back smooth, ordinary spacetime and the familiar graviton. Recovering Einstein gravity at large scales — the "continuum limit" — is unsolved.</li>
+<li class="verdict">The equation governing the dynamics is ambiguous and hard to solve.</li>
+<li class="verdict">Fitting in Standard-Model matter is not as natural as in string theory, and there's no unification of the forces.</li>
+<li class="verdict">A literal smallest length can clash with special relativity's length contraction — a worry tightly constrained by observations.</li>
 </ul></div>
 </div>
 
 <!-- ============================================================= -->
 <h2 id="as"><span class="tag">candidate 3</span> Asymptotic safety</h2>
-<p>Weinberg's idea is the most conservative of all: maybe gravity <em>is</em> a QFT, just not a <b>perturbatively</b> renormalizable one. It could be <b>non-perturbatively renormalizable</b> if the RG flow runs into a non-trivial <b>UV fixed point</b> with a finite-dimensional critical surface. Then only finitely many couplings are free — predictivity is restored despite infinitely many operators.</p>
+<p><b>The idea in one sentence:</b> maybe gravity <em>is</em> an ordinary quantum field theory after all — it just isn't tamed by the usual perturbative trick, but by the way its couplings <em>flow</em> with energy.</p>
+<p>Coupling "constants" actually change with the energy scale you probe (this is the renormalization group, or RG — it's why the strong coupling weakens at high energy, "asymptotic freedom"). The flow can end at a special point — a <b>fixed point</b> — where the couplings stop changing and the theory stays finite and well-defined up to infinite energy. Weinberg's conjecture: gravity's couplings flow to such a fixed point. If only a finite number of couplings need to be tuned to land on it, you recover predictivity. ("Safe" = no infinities run away; "asymptotic" = as energy → ∞.)</p>
 
 <div class="fig">
 <canvas id="rgflow" width="860" height="380"></canvas>
 <div class="legend">
-  <span><span class="swatch" style="border-color:#7CFFB0"></span>trajectories pulled into the UV fixed point</span>
-  <span><span class="swatch" style="border-color:#ff7a7a"></span>trajectory leaving the critical surface (un-physical)</span>
+  <span><span class="swatch" style="border-color:#7CFFB0"></span>flows captured by the fixed point (well-behaved)</span>
+  <span><span class="swatch" style="border-color:#ff7a7a"></span>a flow that escapes (ill-defined at high energy)</span>
   <button class="btn" onclick="restartRG()">▶ replay</button>
 </div>
-<div class="cap"><b>Animation 3.</b> RG flow in a Newton-coupling / cosmological-constant plane (schematic). The <span style="color:var(--good)">★ non-Gaussian fixed point</span> has a finite-dimensional UV-attractive surface (here 2–3 relevant directions). A theory living on that surface stays well-defined up to arbitrarily high energy — that is what "asymptotically safe" means, the analogue of asymptotic freedom but at an interacting fixed point.</div>
+<div class="cap"><b>Animation 3.</b> Picture the two main gravitational couplings as a plane, and watch how they change as you raise the energy. Trajectories spiral into the <span style="color:var(--good)">★ fixed point</span>. A theory sitting on the surface that flows into that point never blows up — that's "asymptotically safe." It's the same idea as asymptotic freedom, but ending at an interacting point instead of at zero.</div>
 </div>
 
 <div class="grid2">
-<div class="panel"><b>What it buys you</b>
+<div class="panel"><b>Why people love it</b>
 <ul>
-<li>Stays within ordinary 4D QFT — no new ingredients, no extra dimensions.</li>
-<li>Functional RG (Wetterich equation) truncations consistently find a fixed point with the right number (~3) of relevant directions across many truncations — suggestive evidence.</li>
-<li>Potential <b>predictions</b>: a famous (if debated) postdiction-style argument for the Higgs mass; constraints on couplings flowing from the fixed point.</li>
+<li>The most economical option: no new particles, dimensions, or symmetries — just QFT done non-perturbatively.</li>
+<li>Many independent (approximate) calculations keep finding the required fixed point, which is encouraging.</li>
+<li>It can make predictions — there were even claimed predictions for the Higgs mass from this idea.</li>
 </ul></div>
 <div class="panel"><b>Why people aren't satisfied</b>
 <ul>
-<li class="verdict"><b>Truncation reliability.</b> Evidence comes from finite truncations of an infinite-dimensional theory space; demonstrating that the fixed point survives in the full theory (not an artifact) is unresolved.</li>
-<li class="verdict">Most computations are <b>Euclidean</b>; continuation to Lorentzian signature and a clean definition of the physical state space is hard.</li>
-<li class="verdict"><b>Unitarity.</b> Higher-derivative terms generically bring ghosts; whether the asymptotically-safe theory is unitary (the ghosts are spurious / resummed away) is contested.</li>
-<li class="verdict">It addresses the UV-completion question but says little about background independence, singularities, or the information paradox.</li>
+<li class="verdict"><b>The evidence relies on approximations.</b> The fixed point is found by truncating an infinitely complicated calculation. Whether it's real or an artifact of the approximation is unsettled.</li>
+<li class="verdict">Most of the work is done in "imaginary time" (Euclidean); translating back to real time and real probabilities is hard.</li>
+<li class="verdict">The higher-derivative terms it needs tend to bring "ghosts" — states with negative probability. Showing the theory is sensible (unitary) is contested.</li>
+<li class="verdict">It says little about black holes, singularities, or what spacetime is made of.</li>
 </ul></div>
 </div>
 
 <!-- ============================================================= -->
-<h2 id="others"><span class="tag">candidates 4–6</span> Discrete &amp; Lorentz-breaking approaches</h2>
+<h2 id="others"><span class="tag">candidates 4–6</span> Build spacetime out of discrete pieces</h2>
+<p>A family of approaches that, like LQG, bet spacetime is fundamentally discrete or built by counting — but assembled differently.</p>
 <table>
-<tr><th>Program</th><th>Core move</th><th>Why it stalls</th></tr>
+<tr><th>Approach</th><th>The idea, plainly</th><th>Where it gets stuck</th></tr>
 <tr>
-  <td><b>Causal Dynamical Triangulations</b></td>
-  <td>Lattice path integral over <em>causal</em> (foliated) simplicial geometries; sum <code>e<sup>iS<sub>Regge</sub></sup></code>. Numerically grows a 4D, de Sitter-like universe from nothing — a real success, and shows dimensional reduction to ~2 in the UV.</td>
-  <td>Needs a preferred foliation (causality condition) — tension with full diffeo invariance; reaching a second-order phase transition (continuum limit) and recovering gravitons is still in progress.</td>
+  <td><b>Causal Dynamical Triangulations (CDT)</b></td>
+  <td>Approximate spacetime by gluing tiny 4D triangle-like blocks, keeping cause-before-effect, and let a computer sum over all the ways to glue them. Remarkably, a smooth 4D universe of the right shape <em>emerges</em> from the simulation.</td>
+  <td>It needs a built-in notion of time-slicing, which sits uneasily with full relativity; and proving it yields real gravitons in the continuum is still in progress.</td>
 </tr>
 <tr>
   <td><b>Causal sets</b></td>
-  <td>Spacetime = a discrete partial order (causal relations) + counting ⇒ volume. "Order + number = geometry." Predicted the order of magnitude of <code>Λ</code> via fluctuation arguments before/around its discovery.</td>
-  <td>Recovering local dynamics, a Lagrangian, and matter from pure causal order is very hard; non-locality is generic.</td>
+  <td>Spacetime = a set of discrete events plus the bare "which event can influence which" relations. Geometry is recovered from just <em>ordering + counting</em>. It even gave a rough early estimate of the tiny cosmological constant.</td>
+  <td>Getting actual dynamics, a usable action, and ordinary matter out of pure ordering is very hard; the theory tends to be stubbornly non-local.</td>
 </tr>
 <tr>
-  <td><b>Hořava–Lifshitz</b></td>
-  <td>Give space and time <em>anisotropic</em> scaling <code>t→b<sup>z</sup>t, x→bx</code> with <code>z=3</code> in the UV. Then gravity is <b>power-counting renormalizable</b> as an ordinary QFT.</td>
-  <td>Explicitly breaks Lorentz invariance at high energy; a problematic extra scalar mode, strong-coupling and fine-tuning issues to recover GR + Lorentz invariance in the IR.</td>
+  <td><b>Hořava–Lifshitz gravity</b></td>
+  <td>Treat space and time on a different footing at high energy (let time scale differently from space). This simple change makes gravity renormalizable by the usual power-counting.</td>
+  <td>It sacrifices the equal treatment of space and time (Lorentz symmetry) at high energy, and has trouble getting that symmetry back at low energy where experiments demand it — plus an unwanted extra mode.</td>
 </tr>
 </table>
-<p class="small">Group field theory and tensor models sit alongside these as a "second-quantized" formulation of spin foams / random geometry, sharing both the appeal (background independence) and the central difficulty (continuum limit, phase transition to geometry).</p>
 
 <!-- ============================================================= -->
-<h2 id="emergent"><span class="tag">candidate 7</span> Gravity as emergent / thermodynamic</h2>
-<p>A different stance: maybe you <em>shouldn't</em> quantize <code>g<sub>μν</sub></code> at all, because it is not fundamental — it is a coarse-grained, thermodynamic variable, like temperature or fluid density. Quantizing the metric would then be as misguided as "quantizing" the Navier–Stokes equations.</p>
-<ul>
-<li><b>Jacobson (1995):</b> demand <code>δQ = T δS</code> with <code>S = A/4G</code> across every local Rindler horizon, and the <b>Einstein equations fall out as an equation of state</b>. Striking — it says GR's field equations are thermodynamics, not microdynamics.</li>
-<li><b>Holographic entanglement (Ryu–Takayanagi); ER=EPR; "entanglement builds geometry":</b> in AdS/CFT, the bulk geometry is reconstructed from boundary entanglement entropy. Spacetime connectivity ↔ quantum entanglement.</li>
-<li><b>Verlinde's entropic gravity</b> is the most radical (and most criticized) version.</li>
-</ul>
-<div class="verdict">If gravity is emergent, the right "microscopic" degrees of freedom are unknown — these arguments tell you gravity looks thermodynamic but not what the "atoms of spacetime" are, nor do most of them yet predict new numbers. And whether the metric has its own quantum degrees of freedom is exactly what we'd like to test (see §8).</div>
+<h2 id="emergent"><span class="tag">candidate 7</span> Maybe gravity shouldn't be quantized at all</h2>
+<p><b>The idea in one sentence:</b> perhaps the metric isn't fundamental — it's an average, like temperature or pressure — and quantizing it would be a category error, like trying to "quantize" the temperature of a gas instead of the molecules.</p>
+<p>The striking result here is Jacobson's (1995): if you assume every small observer sees a horizon with entropy <code>S=A/4G</code> and demand the basic thermodynamic relation "heat = temperature × entropy change" hold everywhere, then <b>Einstein's equations pop out automatically</b> — as if they were the "equation of state" of some underlying stuff. Related modern work shows that in AdS/CFT, the shape of spacetime is built up from the <b>quantum entanglement</b> of the boundary theory — "entanglement is the glue of spacetime."</p>
+<div class="verdict">The catch: these arguments strongly suggest gravity is emergent, but they don't tell you what the underlying "molecules of spacetime" actually are, and most don't yet predict new numbers. And whether the metric has its own quantum jiggle is exactly what we'd like to measure (next section).</div>
 
 <!-- ============================================================= -->
-<h2 id="frontier">8. Where the genuinely open / under-exploited frontier is</h2>
-<p>These are the directions a particle theorist is unusually well-positioned to push, and where I think the marginal returns are highest:</p>
+<h2 id="frontier">8. Directions that look genuinely promising</h2>
+<p>The freshest progress isn't a brand-new "theory of everything" — it's a set of sharper tools and one possible experiment. These are also the most accessible places for a young particle physicist to jump in.</p>
 
-<h3>(a) The amplitudes &amp; bootstrap attack — gravity from on-shell consistency</h3>
-<p>Rather than quantizing a Lagrangian, demand Lorentz invariance + unitarity + locality + analyticity and see what survives. Two threads with real momentum:</p>
-<ul>
-<li><b>Double copy / KLT:</b> <span class="mono">gravity = (gauge theory)²</span> at the level of amplitudes — graviton numerators are squares of gluon numerators (BCJ). It is computationally transformative and hints that gravity's structure is <em>derived</em>, not fundamental. <em>Under-exploited:</em> a non-perturbative, off-shell, curved-background formulation of the double copy is missing — nailing that could be a genuine reframing of what the metric "is".</li>
-<li><b>Positivity / causality bounds &amp; the S-matrix bootstrap:</b> dispersion relations + unitarity put two-sided bounds on the Wilson coefficients of the gravitational EFT (e.g. the sign/size of <code>R³</code>, <code>R⁴</code> terms). This carves out the "landscape vs swampland" boundary <em>rigorously</em>, from low-energy consistency alone — arguably the most model-independent progress of the last decade and far from exhausted.</li>
-</ul>
+<h3>(a) "Gravity = the square of a force we understand"</h3>
+<p>A startling discovery in scattering-amplitude calculations: the formula for a graviton interaction looks like the formula for a gluon (strong-force) interaction <b>squared</b>. This "double copy" makes horrendous gravity calculations tractable and hints that gravity is <em>built out of</em> ordinary gauge theory rather than being fundamental. We don't yet fully understand <em>why</em> it works — cracking that could reshape how we think about the metric.</p>
 
-<h3>(b) Replica wormholes, islands, and the Page curve</h3>
+<h3>(b) Black holes might not destroy information after all</h3>
 <div class="fig">
 <canvas id="pagecurve" width="860" height="300"></canvas>
 <div class="legend">
-  <span><span class="swatch" style="border-color:#ff7a7a;border-top-style:dashed"></span>Hawking's monotone curve (information lost)</span>
-  <span><span class="swatch" style="border-color:#7CFFB0"></span>Page curve (unitary)</span>
+  <span><span class="swatch" style="border-color:#ff7a7a;border-top-style:dashed"></span>Hawking's old answer: information lost</span>
+  <span><span class="swatch" style="border-color:#7CFFB0"></span>"Page curve": information preserved</span>
   <button class="btn" onclick="restartPage()">▶ replay</button>
 </div>
-<div class="cap"><b>Animation 4.</b> The post-2019 breakthrough: including <b>replica-wormhole</b> saddles and "<b>island</b>" contributions to the gravitational entropy reproduces the unitary <span style="color:var(--good)">Page curve</span> (entropy turns over at the Page time) <em>from a semiclassical gravity computation</em>. We can now extract unitary black-hole evaporation without knowing the full UV theory.</div>
+<div class="cap"><b>Animation 4.</b> Track the entanglement entropy of a black hole's outgoing radiation. Hawking's calculation says it rises forever (information destroyed — a paradox, since quantum mechanics forbids that). The unitary answer (the "Page curve," green) must rise then <em>fall</em> back to zero. Since ~2019, new gravity calculations involving "islands" and "replica wormholes" reproduce the green curve — recovering the good answer from gravity itself, without needing the full theory. A major breakthrough, though making it work for real 4D black holes is unfinished.</div>
 </div>
-<p><em>Why it's a frontier, not a closed chapter:</em> the islands prescription works beautifully in low-dimensional / AdS toy models, but the actual <b>information-carrying microstates</b>, and a fully 4D, flat-space, real-astrophysical-black-hole version, remain open. Reconciling "entropy comes from wormhole saddles" with standard quantum-mechanical microstate counting (the "ensemble averaging" puzzle) is live and deep.</p>
 
-<h3>(c) Celestial / flat-space holography</h3>
-<p>AdS/CFT is our one airtight definition of quantum gravity, but our universe isn't AdS. Recasting 4D flat-space scattering as a 2D <b>celestial CFT</b> on the sphere at null infinity — organized by the <b>BMS</b> asymptotic symmetry group and the IR <b>soft theorems</b> (Strominger's "infrared triangle": soft theorems = asymptotic symmetries = memory effect) — is the most promising route to a holographic, background-independent-ish handle on <em>realistic</em> gravity. It is young, technically wide-open, and squarely in amplitudes-theorist territory.</p>
+<h3>(c) Holography for a realistic universe (celestial holography)</h3>
+<p>AdS/CFT is powerful but lives in a universe with the wrong (curved-boundary) shape. A young, fast-moving effort tries to build a similar "boundary description" for ordinary flat space, by organizing particle collisions using the symmetries seen infinitely far away. It connects to "soft theorems" — facts about very-low-energy photons and gravitons you already meet in QFT — and is wide open for new work.</p>
 
-<h3>(d) Tabletop tests: is gravity even quantum? (BMV)</h3>
-<div class="win">The Bose–Marletto–Vedral proposal: put two masses each in spatial superposition; if the <b>gravitational</b> interaction generates <b>entanglement</b> between them, then — under the assumption that local operations + classical communication can't create entanglement — gravity must have non-classical (mediating quantum) degrees of freedom. This is an actual, if heroic, near-future experiment that could falsify "gravity is classical" without ever reaching <code>M<sub>Pl</sub></code>. Hugely under-appreciated by the high-energy community.</div>
+<h3>(d) A tabletop test of whether gravity is quantum at all</h3>
+<div class="win">Here's the experiment to watch (the "BMV" proposal). Take two tiny masses, put each into a quantum superposition of two places at once, and let them sit near each other so they interact <b>only</b> through gravity. Quantum mechanics says: if the gravitational interaction can <em>entangle</em> the two masses, then gravity itself must be quantum (a purely classical force can't create entanglement). This is a real, if extremely hard, near-future experiment — and it could tell us whether the metric must be quantized <em>without</em> ever reaching the Planck energy. Hugely under-appreciated.</div>
 
-<h3>(e) Cross-pollination nobody has finished</h3>
-<ul>
-<li>A <b>Lorentzian, ghost-resolved</b> functional RG for asymptotic safety, cross-checked against the amplitudes/causality bounds — two communities computing the same Wilson coefficients from opposite ends, rarely compared head-to-head.</li>
-<li>Using <b>CDT/causal-set</b> numerics to test whether the asymptotic-safety fixed point and the observed UV dimensional reduction to ~2 are the same phenomenon — a quantitative bridge between discrete and continuum programs that is mostly conjectural today.</li>
-<li><b>Cosmological / GW signatures</b> as a data channel: primordial non-Gaussianity, the GW spectrum, and the inflationary "cosmological collider" as a quantum-gravity-adjacent probe — where a tool like GAMBIT-style global fitting (the codebase this very file sits in!) over BSM+gravity-EFT parameters could turn swampland/positivity bounds into confrontations with data.</li>
-</ul>
+<h3>(e) Getting the different camps to talk</h3>
+<p>Some of the best low-hanging fruit is just connecting programs that rarely compare notes: e.g. checking whether the "fixed point" of asymptotic safety and the smooth universe that emerges from CDT simulations are describing the same thing; or — fitting, since this very file lives inside the <b>GAMBIT</b> global-fitting code — using data-fitting machinery to confront gravity-plus-new-physics models with cosmology and gravitational-wave data.</p>
 
 <!-- ============================================================= -->
-<h2 id="table">9. One-screen scorecard</h2>
+<h2 id="table">9. One-screen cheat sheet</h2>
 <table>
-<tr><th>Program</th><th>UV-finite?</th><th>Background-indep.?</th><th>Predicts S=A/4G?</th><th>Biggest open wound</th></tr>
-<tr><td><b>String / M-theory</b></td><td>✔ (pert.)</td><td>✘ (asymptotic bgd)</td><td>✔ (BPS)</td><td>landscape; no dS; not falsifiable yet</td></tr>
-<tr><td><b>LQG / spin foam</b></td><td>by construction</td><td>✔</td><td>partial</td><td>continuum limit / recover GR + graviton</td></tr>
-<tr><td><b>Asymptotic safety</b></td><td>✔ (if FP real)</td><td>—</td><td>—</td><td>truncations; Lorentzian unitarity/ghosts</td></tr>
-<tr><td><b>CDT</b></td><td>lattice</td><td>partial (foliation)</td><td>—</td><td>continuum limit; gravitons</td></tr>
-<tr><td><b>Causal sets</b></td><td>discrete</td><td>✔</td><td>—</td><td>dynamics &amp; matter from pure order</td></tr>
-<tr><td><b>Hořava</b></td><td>✔ (power-counting)</td><td>✘ (Lorentz-breaking)</td><td>—</td><td>extra mode; recover Lorentz/GR in IR</td></tr>
-<tr><td><b>Emergent / holographic</b></td><td>N/A</td><td>✔ (ideally)</td><td>✔ (input)</td><td>identity of the microscopic d.o.f.</td></tr>
+<tr><th>Approach</th><th>Core bet</th><th>Killer feature</th><th>Biggest unsolved problem</th></tr>
+<tr><td><b>String theory</b></td><td>particles are strings</td><td>finite; unifies forces; AdS/CFT</td><td>10D + huge "landscape", no unique prediction</td></tr>
+<tr><td><b>Loop quantum gravity</b></td><td>quantize geometry itself</td><td>space is discrete; no background</td><td>can't yet recover smooth spacetime + graviton</td></tr>
+<tr><td><b>Asymptotic safety</b></td><td>gravity is an ordinary QFT</td><td>economical; possibly predictive</td><td>relies on approximations; ghosts/unitarity</td></tr>
+<tr><td><b>CDT / causal sets</b></td><td>build spacetime from discrete bits</td><td>a 4D universe emerges in sims</td><td>continuum limit; recover real dynamics + matter</td></tr>
+<tr><td><b>Hořava–Lifshitz</b></td><td>time scales differently in UV</td><td>renormalizable</td><td>breaks Lorentz symmetry; hard to undo at low E</td></tr>
+<tr><td><b>Emergent gravity</b></td><td>metric is thermodynamic</td><td>derives Einstein's equations</td><td>what are the underlying degrees of freedom?</td></tr>
 </table>
 
 <div class="panel">
-<b>The one-paragraph synthesis.</b> Perturbative quantum gravity is a fine EFT and makes real predictions below <code>M<sub>Pl</sub></code>; the crisis is purely the UV completion plus a cluster of conceptual problems (background independence, time, unitarity of black holes). String theory gives the most complete UV-finite, holographic answer but at the cost of extra dimensions and a non-predictive landscape; LQG/CDT/causal sets keep 4D and background independence but cannot yet grow back smooth GR; asymptotic safety is the most economical but rests on un-controlled truncations. The freshest oxygen is coming not from a new "theory of everything" but from <em>consistency-first</em> methods — amplitudes, double copy, causality/positivity bounds, the island/Page-curve resolution of the information paradox, celestial holography — and, remarkably, from <em>experiment</em>: gravitationally-induced entanglement could tell us within a generation whether the metric must be quantized at all.
+<b>The take-home in one paragraph.</b> Quantizing gravity is easy at low energies — it's a perfectly good effective theory that even predicts small quantum corrections to Newton's law. The crisis is purely at high energy (the Planck scale), where infinities pile up uncontrollably because Newton's constant carries the "wrong" dimensions, plus a set of deep puzzles because gravity <em>is</em> spacetime rather than a field on it. String theory gives the most complete cure but at the price of extra dimensions and a vast, non-predictive landscape; loop quantum gravity and the discrete approaches keep four dimensions and background independence but can't yet rebuild smooth spacetime; asymptotic safety is the most conservative but rests on approximations. The most exciting recent oxygen comes from sharper tools (the gravity-as-gauge-squared "double copy," the island/Page-curve rescue of black-hole information, flat-space holography) — and, remarkably, from a tabletop experiment that may soon tell us whether gravity is quantum at all.
 </div>
 
-<p class="small" style="margin-top:40px">Open this file in any browser. Math renders via MathJax if the CDN is reachable; otherwise the Unicode fallbacks keep everything readable offline. All diagrams/animations are self-contained (inline SVG + canvas).</p>
+<p class="small" style="margin-top:40px">Open this file in any browser. Equations render nicely if MathJax's server is reachable; otherwise the plain-text versions are still readable. All figures and animations are self-contained.</p>
 
 </div>
 
 <script>
-/* ---------- Animation 1: unitarity violation ---------- */
+/* ---------- Animation 1: probability ceiling ---------- */
 function unitarityDraw(){
   const c=document.getElementById('unitarity'),x=c.getContext('2d');
   const W=c.width,H=c.height,t0=performance.now();
   function frame(now){
     const p=Math.min((now-t0)/2600,1);
     x.clearRect(0,0,W,H);
-    // axes
     x.strokeStyle='#33455a';x.lineWidth=1;
     x.beginPath();x.moveTo(60,H-30);x.lineTo(W-20,H-30);x.moveTo(60,20);x.lineTo(60,H-30);x.stroke();
     x.fillStyle='#9fb0c0';x.font='13px sans-serif';
     x.fillText('energy  E →',W-130,H-10);
-    x.save();x.translate(18,H/2);x.rotate(-Math.PI/2);x.fillText('amplitude  |A|',0,0);x.restore();
-    // unitarity bound
+    x.save();x.translate(18,H/2);x.rotate(-Math.PI/2);x.fillText('scattering strength',0,0);x.restore();
     const yb=80;
     x.strokeStyle='#ff7a7a';x.setLineDash([7,6]);x.beginPath();x.moveTo(60,yb);x.lineTo(W-20,yb);x.stroke();
-    x.setLineDash([]);x.fillStyle='#ff7a7a';x.fillText('unitarity bound',W-160,yb-8);
-    // Planck marker
+    x.setLineDash([]);x.fillStyle='#ff7a7a';x.fillText('probability = 1 ceiling',W-180,yb-8);
     const xPl=60+(W-80)*0.78;
     x.strokeStyle='#6b7a8c';x.setLineDash([3,5]);x.beginPath();x.moveTo(xPl,20);x.lineTo(xPl,H-30);x.stroke();x.setLineDash([]);
-    x.fillStyle='#9fb0c0';x.fillText('M_Pl',xPl-14,H-34);
-    // growing curve ~ E^2
+    x.fillStyle='#9fb0c0';x.fillText('Planck scale',xPl-34,H-34);
     x.strokeStyle='#6cc6ff';x.lineWidth=3;x.beginPath();
     const N=Math.floor(((W-80))*p);
     for(let i=0;i<=N;i++){const xx=60+i; const e=i/(W-80);
       const y=(H-30)-Math.pow(e*1.5,2)*(H-60); x.lineTo(xx,Math.max(8,y)); }
     x.stroke();
-    // crash flash
     if(p>0.83){x.fillStyle='rgba(255,122,122,'+(0.4*(p-0.83)/0.17)+')';x.beginPath();x.arc(xPl,yb,30,0,7);x.fill();}
     if(p<1)requestAnimationFrame(frame);
   }
@@ -392,66 +386,51 @@ function worldsheetDraw(){
   function frame(){
     t+=0.02;x.clearRect(0,0,W,H);
     x.fillStyle='#9fb0c0';x.font='14px sans-serif';
-    x.fillText('point particle: sharp vertex',60,28);
-    x.fillText('closed string: smooth "pair of pants"',500,28);
-    // left: worldlines meeting at a point
+    x.fillText('point particles: sharp meeting point',60,28);
+    x.fillText('strings: smooth merge ("pair of pants")',500,28);
     x.strokeStyle='#6cc6ff';x.lineWidth=3;
     x.beginPath();x.moveTo(80,80);x.lineTo(210,150);x.moveTo(80,220);x.lineTo(210,150);
     x.moveTo(210,150);x.lineTo(360,150);x.stroke();
     x.fillStyle='#ff7a7a';x.beginPath();x.arc(210,150,7+2*Math.sin(t*4),0,7);x.fill();
-    x.fillStyle='#ff7a7a';x.font='12px sans-serif';x.fillText('UV-localized',150,185);
-    // right: worldsheet tube splitting
+    x.fillStyle='#ff7a7a';x.font='12px sans-serif';x.fillText('infinities born here',150,185);
     const ox=560,oy=150;
-    x.strokeStyle='#ffcf6c';x.lineWidth=2;x.fillStyle='rgba(255,207,108,0.10)';
-    // incoming tube (one cylinder) then split to two
+    x.strokeStyle='#ffcf6c';x.lineWidth=2;
     for(let s=0;s<=1;s+=0.04){
-      const xx=ox-120+s*120;
-      const r=14+6*Math.sin(t+s*3);
+      const xx=ox-120+s*120;const r=14+6*Math.sin(t+s*3);
       x.beginPath();x.ellipse(xx,oy,5,r,0,0,7);x.stroke();
     }
-    // split into two outgoing tubes
     for(let s=0;s<=1;s+=0.05){
-      const xx=ox+s*150;
-      const sep=s*55;
-      const r=10+3*Math.sin(t+s*4);
+      const xx=ox+s*150;const sep=s*55;const r=10+3*Math.sin(t+s*4);
       x.beginPath();x.ellipse(xx,oy-sep,4,r,0,0,7);x.stroke();
       x.beginPath();x.ellipse(xx,oy+sep,4,r,0,0,7);x.stroke();
     }
-    x.fillStyle='#7CFFB0';x.font='12px sans-serif';x.fillText('interaction smeared — UV-soft',600,250);
+    x.fillStyle='#7CFFB0';x.font='12px sans-serif';x.fillText('no single point — stays finite',600,250);
     requestAnimationFrame(frame);
   }
   frame();
 }
 
-/* ---------- Animation 3: RG flow to UV fixed point ---------- */
+/* ---------- Animation 3: RG flow to fixed point ---------- */
 function rgDraw(){
   const c=document.getElementById('rgflow'),x=c.getContext('2d');
   const W=c.width,H=c.height;
-  // fixed point location
   const fx=W*0.62, fy=H*0.42;
-  // a simple flow field: spiral-in toward (fx,fy) for "safe" trajectories
   const trajs=[];
-  for(let i=0;i<7;i++){
-    trajs.push({x:80+i*40, y:H-40-i*14, hist:[], safe:true, born:i*120});
-  }
-  trajs.push({x:W-80,y:H-60,hist:[],safe:false,born:300}); // runs away
+  for(let i=0;i<7;i++){trajs.push({x:80+i*40, y:H-40-i*14, hist:[], safe:true, born:i*120});}
+  trajs.push({x:W-80,y:H-60,hist:[],safe:false,born:300});
   const t0=performance.now();
   function vel(px,py,safe){
-    let dx=fx-px, dy=fy-py; const d=Math.hypot(dx,dy)+1e-3;
-    dx/=d;dy/=d;
-    // add rotation for spiral
+    let dx=fx-px, dy=fy-py; const d=Math.hypot(dx,dy)+1e-3; dx/=d;dy/=d;
     let vx=dx*1.6 - dy*0.9, vy=dy*1.6 + dx*0.9;
-    if(!safe){vx=1.2; vy=0.6;} // leaves surface
+    if(!safe){vx=1.2; vy=0.6;}
     return [vx,vy];
   }
   function frame(now){
     x.clearRect(0,0,W,H);
-    // axes labels
     x.fillStyle='#9fb0c0';x.font='13px sans-serif';
-    x.fillText('Newton coupling  g →',W-200,H-10);
-    x.save();x.translate(18,H/2+40);x.rotate(-Math.PI/2);x.fillText('cosmological const  λ →',0,0);x.restore();
+    x.fillText('Newton coupling →',W-160,H-10);
+    x.save();x.translate(18,H/2+40);x.rotate(-Math.PI/2);x.fillText('cosmological constant →',0,0);x.restore();
     x.strokeStyle='#33455a';x.beginPath();x.moveTo(50,H-30);x.lineTo(W-20,H-30);x.moveTo(50,20);x.lineTo(50,H-30);x.stroke();
-    // critical surface (schematic curve through FP)
     x.strokeStyle='rgba(124,255,176,0.25)';x.lineWidth=10;
     x.beginPath();x.moveTo(70,H-50);x.quadraticCurveTo(fx,fy+10,fx,fy);x.stroke();
     for(const tr of trajs){
@@ -466,9 +445,8 @@ function rgDraw(){
       tr.hist.forEach((p,i)=>{i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]);});x.stroke();
       x.fillStyle=tr.safe?'#7CFFB0':'#ff7a7a';x.beginPath();x.arc(tr.x,tr.y,3.5,0,7);x.fill();
     }
-    // fixed point star
     x.fillStyle='#7CFFB0';x.font='20px sans-serif';x.fillText('★',fx-8,fy+7);
-    x.fillStyle='#cffae0';x.font='13px sans-serif';x.fillText('non-Gaussian UV fixed point',fx+12,fy-6);
+    x.fillStyle='#cffae0';x.font='13px sans-serif';x.fillText('fixed point (theory stays finite)',fx+12,fy-6);
     requestAnimationFrame(frame);
   }
   frame();
@@ -484,36 +462,31 @@ function pageDraw(){
     x.clearRect(0,0,W,H);
     x.strokeStyle='#33455a';x.beginPath();x.moveTo(60,H-30);x.lineTo(W-20,H-30);x.moveTo(60,20);x.lineTo(60,H-30);x.stroke();
     x.fillStyle='#9fb0c0';x.font='13px sans-serif';
-    x.fillText('time / radiation emitted →',W-220,H-10);
-    x.save();x.translate(18,H/2+30);x.rotate(-Math.PI/2);x.fillText('entanglement entropy of radiation',0,0);x.restore();
+    x.fillText('time (black hole evaporating) →',W-260,H-10);
+    x.save();x.translate(18,H/2+30);x.rotate(-Math.PI/2);x.fillText('information in the radiation',0,0);x.restore();
     const x0=60,x1=W-20,y0=H-30,y1=40;
     const Smax=(y0-y1)*0.8;
-    // Page time at middle
     const xpage=x0+(x1-x0)*0.5;
     x.strokeStyle='#6b7a8c';x.setLineDash([3,5]);x.beginPath();x.moveTo(xpage,y1);x.lineTo(xpage,y0);x.stroke();x.setLineDash([]);
-    x.fillStyle='#9fb0c0';x.fillText('Page time',xpage-30,y1-6);
-    // Hawking monotone (dashed red) — keeps rising
+    x.fillStyle='#9fb0c0';x.fillText('halfway point',xpage-38,y1-6);
     x.strokeStyle='#ff7a7a';x.setLineDash([7,6]);x.lineWidth=2.5;x.beginPath();
     const Nh=Math.floor((x1-x0)*p);
     for(let i=0;i<=Nh;i++){const f=i/(x1-x0);const y=y0-Smax*Math.min(f*1.6,1.6);x.lineTo(x0+i,y);}
     x.stroke();x.setLineDash([]);
-    // Page curve (green) rise then fall
     x.strokeStyle='#7CFFB0';x.lineWidth=3;x.beginPath();
     for(let i=0;i<=Nh;i++){const f=i/(x1-x0);
-      const rise=Smax*Math.min(f*1.6,0.8); // up to page
       const y= f<0.5 ? y0-Smax*f*1.6 : y0-Smax*(1.6*(1-f));
       x.lineTo(x0+i,Math.min(y0,y));
     }
     x.stroke();
-    x.fillStyle='#ff7a7a';x.font='12px sans-serif';x.fillText("Hawking (info lost)",x1-160,y1+10);
-    x.fillStyle='#7CFFB0';x.fillText("Page curve (unitary)",x0+20,y0-Smax-6);
+    x.fillStyle='#ff7a7a';x.font='12px sans-serif';x.fillText("Hawking: rises forever (paradox)",x1-220,y1+14);
+    x.fillStyle='#7CFFB0';x.fillText("Page curve: comes back (no paradox)",x0+20,y0-Smax-6);
     if(p<1)requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 }
 function restartPage(){pageDraw();}
 
-/* kick everything off */
 unitarityDraw();worldsheetDraw();rgDraw();pageDraw();
 </script>
 </body>
