@@ -793,7 +793,13 @@ def _extract_be_capabilities(text):
             caps.add(quotes[-1])
     return caps
 
-_BIT_REQ_RE = re.compile(r'\b(?:LONG_)?BACKEND_REQ(?:_FROM_GROUP)?\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)')
+# Plain (LONG_)BACKEND_REQ(capability, ...): the capability is the 1st argument.
+# The negative lookahead keeps this from also matching the _FROM_GROUP form.
+_BIT_REQ_RE = re.compile(r'\b(?:LONG_)?BACKEND_REQ(?!_FROM_GROUP)\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)')
+# (LONG_)BACKEND_REQ_FROM_GROUP(group, capability, ...): the capability is the
+# 2nd argument; the 1st argument is the group name, which is not a backend
+# capability and so must not be treated as one.
+_BIT_REQ_GROUP_RE = re.compile(r'\b(?:LONG_)?BACKEND_REQ_FROM_GROUP\s*\(\s*[A-Za-z_][A-Za-z0-9_]*\s*,\s*([A-Za-z_][A-Za-z0-9_]*)')
 _BIT_NCF_RE = re.compile(r'\bNEEDS_CLASSES_FROM\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)')
 
 
@@ -849,8 +855,9 @@ def compute_bits_per_backend(project_root, frontend_dir):
                         text = comment_remover(f.read())
                 except (IOError, OSError):
                     continue
-                for m in _BIT_REQ_RE.finditer(text): bit_caps.add(m.group(1))
-                for m in _BIT_NCF_RE.finditer(text): bit_ncfs.add(m.group(1))
+                for m in _BIT_REQ_RE.finditer(text):       bit_caps.add(m.group(1))
+                for m in _BIT_REQ_GROUP_RE.finditer(text): bit_caps.add(m.group(1))
+                for m in _BIT_NCF_RE.finditer(text):       bit_ncfs.add(m.group(1))
         for be in all_backends:
             if (caps_by_backend[be] & bit_caps) or (be in bit_ncfs):
                 result[be].add(bit)
@@ -941,7 +948,7 @@ def make_module_rollcall(rollcall_headers, verbose, link_time_modules=set()):
 
 """
 
-    for h in rollcall_headers:
+    for h in sorted(rollcall_headers):
         h_module = neatsplit('\\/',h)[1]
         if h_module in link_time_modules:
             towrite += '// {0} registers at link time; its rollcall header is not compiled into the Core.\n'.format(h_module)
@@ -951,9 +958,9 @@ def make_module_rollcall(rollcall_headers, verbose, link_time_modules=set()):
 
     # Don't touch any existing file unless it is actually different from what we will create,
     # so that the Core is not needlessly recompiled.
+    if not os.path.isdir("./scratch/build_time"): os.makedirs("./scratch/build_time")
     header = "./Core/include/gambit/Core/module_rollcall.hpp"
     candidate = "./scratch/build_time/module_rollcall.hpp.candidate"
-    os.makedirs("./scratch/build_time", exist_ok=True)
     with open(candidate,"w") as f: f.write(towrite)
     update_only_if_different(header, candidate, verbose=False)
 

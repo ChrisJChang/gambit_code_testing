@@ -173,11 +173,12 @@ def main(argv):
         towrite+='#include \"gambit/Backends/frontends/{0}\"\n'.format(h)
     towrite+="\n#endif // defined __backend_rollcall_hpp__\n"
 
+    # Don't touch any existing file unless it is actually different from what we will create
+    if not os.path.isdir("./scratch/build_time"): os.makedirs("./scratch/build_time")
     header = "./Backends/include/gambit/Backends/backend_rollcall.hpp"
     candidate = "./scratch/build_time/backend_rollcall.hpp.candidate"
-    os.makedirs("./scratch/build_time", exist_ok=True)
     with open(candidate,"w") as f: f.write(towrite)
-    update_only_if_different(header, candidate, verbose=False)
+    update_only_if_different(header, candidate)
 
     # Generate a c++ header containing all the frontend headers we have just harvested.
     towrite = """//   GAMBIT: Global and Modular BSM Inference Tool
@@ -234,10 +235,11 @@ def main(argv):
 
     towrite+="\n#endif // defined __backend_types_rollcall_hpp__\n"
 
+    # Don't touch any existing file unless it is actually different from what we will create
     header = "./Backends/include/gambit/Backends/backend_types_rollcall.hpp"
     candidate = "./scratch/build_time/backend_types_rollcall.hpp.candidate"
     with open(candidate,"w") as f: f.write(towrite)
-    update_only_if_different(header, candidate, verbose=False)
+    update_only_if_different(header, candidate)
 
     if verbose:
         print("Generated backend_rollcall.hpp.")
