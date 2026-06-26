@@ -19,31 +19,31 @@ flowchart TD
         Model[Model point parameters]
     end
 
-    subgraph "Cross sections (ColliderBit_MC_rollcall.hpp)"
-        XS[InitialTotalCrossSection /\nInitialProcessCrossSections]
-        ActiveProc[ActiveProcessCodes /\nActivePIDPairs]
+    subgraph CrossSec["Cross sections: ColliderBit_MC_rollcall.hpp"]
+        XS["InitialTotalCrossSection /<br/>InitialProcessCrossSections"]
+        ActiveProc["ActiveProcessCodes /<br/>ActivePIDPairs"]
     end
 
-    subgraph "MC event loop (ColliderBit_eventloop.cpp/.hpp)"
-        Collider[getPy8Collider:\nconfigure Pythia8 collider]
-        RunMC[RunMC:\nMCLoopInfo loop manager]
-        GenEvent[generateEventPy8Collider /\ngetLHEvent:\nevent generation]
-        Detector[Detector simulation\n(src/detectors, getBuckFast,\nsmearEvent, ATLAS/CMS efficiencies)]
+    subgraph MCLoop["MC event loop: ColliderBit_eventloop.cpp/.hpp"]
+        Collider["getPy8Collider:<br/>configure Pythia8 collider"]
+        RunMC["RunMC:<br/>MCLoopInfo loop manager"]
+        GenEvent["generateEventPy8Collider /<br/>getLHEvent: event generation"]
+        Detector["Detector simulation:<br/>src/detectors, getBuckFast,<br/>smearEvent, ATLAS/CMS efficiencies"]
     end
 
-    subgraph "Analyses (src/analyses)"
-        RunAnalyses[runAnalyses:\nsignal-region recasting]
-        Rivet[Rivet_measurements\n(ColliderBit_measurements_rollcall.hpp)]
+    subgraph Analyses["Analyses: src/analyses"]
+        RunAnalyses["runAnalyses:<br/>signal-region recasting"]
+        Rivet["Rivet_measurements:<br/>ColliderBit_measurements_rollcall.hpp"]
     end
 
-    subgraph "Likelihoods"
-        XsecConsistency[CrossSectionConsistencyCheck]
-        LHCLogLike[LHC_measurements_LogLike /\nLogLike_Multi / LogLike_perPool]
-        LEPLogLike[LEP likelihoods\n(ColliderBit_LEP_rollcall.hpp)]
-        HiggsLogLike[Higgs likelihoods\n(ColliderBit_Higgs_rollcall.hpp)]
+    subgraph LL["Likelihoods"]
+        XsecConsistency["CrossSectionConsistencyCheck"]
+        LHCLogLike["LHC_measurements_LogLike /<br/>LogLike_Multi / LogLike_perPool"]
+        LEPLogLike["LEP likelihoods:<br/>ColliderBit_LEP_rollcall.hpp"]
+        HiggsLogLike["Higgs likelihoods:<br/>ColliderBit_Higgs_rollcall.hpp"]
     end
 
-    Output[Combined ColliderBit LogLike\n-> GAMBIT total likelihood]
+    Output["Combined ColliderBit LogLike<br/>to GAMBIT total likelihood"]
 
     Model --> XS
     Model --> Collider
