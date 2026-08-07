@@ -51,7 +51,12 @@ namespace Gambit
         : printerInterface(printerInterface), has_local_factory(false)
         {
             options = main_node["Scanner"];
-            
+
+            // Make the top-level ModelSpeeds: section (fast-slow model speed metadata, set by
+            // Core from the yaml Parameters:/ModelSpeeds: entries) available to individual
+            // scanner plugins, the same way plugin-specific option lookups already work.
+            options.setValue("ModelSpeeds", main_node["ModelSpeeds"]);
+
             Plugins::plugin_info.iniFile(options);
             
             if (options.hasKey("use_objectives"))

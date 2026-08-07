@@ -914,6 +914,9 @@ namespace Gambit
                     plugin_options["default_output_path"] = options.getValue<std::string>("default_output_path");
                     plugin_options["print_timing_data"] = options.getValue<std::string>("print_timing_data");
 
+                    if (!plugin_options["ModelSpeeds"] and options.hasKey("ModelSpeeds"))
+                        plugin_options["ModelSpeeds"] = options.getNode("ModelSpeeds");
+
                     if (!plugin_options["likelihood: model_invalid_for_lnlike_below"])
                         plugin_options["likelihood: model_invalid_for_lnlike_below"] = options.getValue<double>("model_invalid_for_lnlike_below");
 
