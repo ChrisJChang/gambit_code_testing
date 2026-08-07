@@ -179,7 +179,7 @@ namespace Gambit
         /// of the given (changed) models, plus any functor that has opted out of fast-slow
         /// caching. If fast-slow caching is disabled in the ini file, every active functor is
         /// marked for recalculation regardless of the supplied set (matches pre-fast-slow behaviour).
-        void invalidateForChangedModels(const std::set<str>& changed_models);
+        void markStaleForChangedModels(const std::set<str>& changed_models);
 
         /// Check for unused rules and options
         void checkForUnusedRules();
@@ -249,9 +249,9 @@ namespace Gambit
         std::vector<std::pair<VertexID,bool>> closestCandidateForModel(std::vector<std::pair<VertexID,bool>> candidates);
 
         /// Precompute, for each active primary model functor, the set of vertices (itself
-        /// included) that transitively depend on it. Used by invalidateForChangedModels to
+        /// included) that transitively depend on it. Used by markStaleForChangedModels to
         /// know which vertices need recalculating when a given model's parameters change.
-        void computeModelInvalidationSets();
+        void computeModelStaleSets();
 
         //
         // Private data members
@@ -324,15 +324,15 @@ namespace Gambit
         /// Global flag for triggering printing of unitCubeParameters
         bool print_unitcube = false;
 
-        /// Whether fast-slow selective invalidation is enabled (ini file: dependency_resolution:
-        /// fast_slow_caching). When false, invalidateForChangedModels behaves like resetAll did
+        /// Whether fast-slow selective staleness marking is enabled (ini file: dependency_resolution:
+        /// fast_slow_caching). When false, markStaleForChangedModels behaves like resetAll did
         /// before fast-slow caching existed, i.e. every active functor is always recalculated;
         /// this is the escape hatch for regression-testing the feature against known-good output.
         bool fast_slow_caching_enabled = false;
 
         /// Map from model name to the set of vertices (including the model's own primary model
         /// functor vertex) that must be recalculated when that model's parameters change.
-        std::map<str, std::set<VertexID>> modelInvalidationSets;
+        std::map<str, std::set<VertexID>> modelStaleSets;
 
   };
   }

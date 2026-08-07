@@ -828,7 +828,7 @@ namespace Gambit
 
     /// Mark this functor as needing recalculation on all threads. Skipping this call for a
     /// functor (while still calling resetPrintFlags) is what makes fast-slow selective
-    /// invalidation reuse its previous result instead of recomputing it.
+    /// staleness marking reuse its previous result instead of recomputing it.
     void module_functor_common::resetForRecalculation()
     {
       init_memory();
@@ -837,13 +837,13 @@ namespace Gambit
       if (iCanManageLoops) resetLoop();
     }
 
-    /// Setter for whether this functor must always be recalculated regardless of selective invalidation.
+    /// Setter for whether this functor must always be recalculated regardless of selective staleness marking.
     void module_functor_common::setAlwaysRecalculate(bool flag)
     {
       iAlwaysRecalculate = flag;
     }
 
-    /// Getter for whether this functor must always be recalculated regardless of selective invalidation.
+    /// Getter for whether this functor must always be recalculated regardless of selective staleness marking.
     bool module_functor_common::getAlwaysRecalculate() const
     {
       return iAlwaysRecalculate;

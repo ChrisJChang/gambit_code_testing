@@ -161,7 +161,7 @@ namespace Gambit
       virtual void resetPrintFlags();
 
       /// Mark this functor as needing recalculation on all threads, without touching the
-      /// print-related flags. Used by selective (fast-slow-aware) invalidation.
+      /// print-related flags. Used by selective (fast-slow-aware) staleness marking.
       virtual void resetForRecalculation();
 
       /// Set/get whether this functor must be recalculated at every scan point regardless of
@@ -528,7 +528,7 @@ namespace Gambit
       void resetPrintFlags();
 
       /// Mark this functor as needing recalculation on all threads, without touching the
-      /// print-related flags. Used by selective (fast-slow-aware) invalidation.
+      /// print-related flags. Used by selective (fast-slow-aware) staleness marking.
       void resetForRecalculation();
 
       /// Set/get whether this functor must be recalculated at every scan point regardless of
@@ -755,7 +755,7 @@ namespace Gambit
       bool* already_printed_timing;
 
       /// Flag indicating whether this function must always be recalculated, even when
-      /// fast-slow-aware selective invalidation would otherwise skip it as unchanged.
+      /// fast-slow-aware selective staleness marking would otherwise skip it as unchanged.
       bool iAlwaysRecalculate;
 
       /// Flag indicating whether this function can manage a loop over other functions

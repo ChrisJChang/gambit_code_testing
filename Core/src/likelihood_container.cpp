@@ -120,7 +120,7 @@ namespace Gambit
     std::ostringstream parstream;
 
     // Names of models for which at least one parameter value actually changed at this point,
-    // used to drive fast-slow selective invalidation of downstream functors.
+    // used to mark downstream functors stale so they get recalculated.
     std::set<str> changed_models;
 
     // Iterate over the primary_model_parameters functors of all the models being scanned.
@@ -157,7 +157,7 @@ namespace Gambit
 
     // Mark for recalculation only the functors affected by models whose parameters actually
     // changed at this point (or everything, if fast-slow caching is disabled in the ini file).
-    dependencyResolver.invalidateForChangedModels(changed_models);
+    dependencyResolver.markStaleForChangedModels(changed_models);
 
     // Notify all exceptions of the values of the parameters for this point.
     exception::set_parameters("\n\nYAML-ready parameter values at failed point:\n"+parstream.str());
@@ -401,7 +401,7 @@ namespace Gambit
 
     if (debug) cout << "Total log-likelihood: " << lnlike << endl << endl;
     logger() << "Total lnL: " << lnlike << EOM;
-    // Recalculation flags for the next point are set by invalidateForChangedModels(), called
+    // Recalculation flags for the next point are set by markStaleForChangedModels(), called
     // from setParameters() once the next point's parameter values are known. Here we only need
     // to clear this point's print flags, so its (possibly cached) results get printed again.
     dependencyResolver.resetPrintFlagsAll();

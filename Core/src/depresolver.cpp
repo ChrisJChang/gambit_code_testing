@@ -255,11 +255,11 @@ namespace Gambit
       for (const auto& equiv_class : boundTEs->equivalency_classes) logger() << endl << equiv_class;
       logger() << EOM;
 
-      // Whether to enable fast-slow selective invalidation, or fall back to the pre-fast-slow
+      // Whether to enable fast-slow selective staleness marking, or fall back to the pre-fast-slow
       // behaviour of always recalculating every active functor at every point (the latter is
-      // useful as a regression check that selective invalidation reproduces identical output).
+      // useful as a regression check that selective staleness marking reproduces identical output).
       fast_slow_caching_enabled = boundIniFile->getValueOrDef<bool>(false, "dependency_resolution", "fast_slow_caching");
-      if (fast_slow_caching_enabled) logger() << LogTags::dependency_resolver << "Fast-slow selective invalidation is enabled." << EOM;
+      if (fast_slow_caching_enabled) logger() << LogTags::dependency_resolver << "Fast-slow selective staleness marking is enabled." << EOM;
     }
 
 
@@ -323,8 +323,8 @@ namespace Gambit
       // Initialise the printer object with a list of functors that are set to print
       initialisePrinter();
 
-      // Precompute which vertices are affected by which model, for fast-slow selective invalidation.
-      computeModelInvalidationSets();
+      // Precompute which vertices are affected by which model, for fast-slow selective staleness marking.
+      computeModelStaleSets();
 
       #ifdef HAVE_GRAPHVIZ
         // Generate graphviz plot if running in dry-run mode.
@@ -793,9 +793,9 @@ namespace Gambit
 
     /// Precompute, for each active primary model functor, the set of vertices (itself
     /// included) that transitively depend on it.
-    void DependencyResolver::computeModelInvalidationSets()
+    void DependencyResolver::computeModelStaleSets()
     {
-      modelInvalidationSets.clear();
+      modelStaleSets.clear();
       for (const auto& model_and_functor : boundCore->getActiveModelFunctors())
       {
         const str& model_name = model_and_functor.first;
@@ -809,7 +809,7 @@ namespace Gambit
             std::set<VertexID> affected;
             getChildVertices(*vi, masterGraph, affected);
             affected.insert(*vi);
-            modelInvalidationSets[model_name] = affected;
+            modelStaleSets[model_name] = affected;
             break;
           }
         }
@@ -818,7 +818,7 @@ namespace Gambit
 
     /// Mark for recalculation only those active functors that transitively depend on one of
     /// the given (changed) models, plus any functor that always requires recalculation.
-    void DependencyResolver::invalidateForChangedModels(const std::set<str>& changed_models)
+    void DependencyResolver::markStaleForChangedModels(const std::set<str>& changed_models)
     {
       graph_traits<MasterGraphType>::vertex_iterator vi, vi_end;
 
@@ -832,14 +832,14 @@ namespace Gambit
         return;
       }
 
-      std::set<VertexID> toInvalidate;
+      std::set<VertexID> staleVertices;
       for (const str& model_name : changed_models)
       {
-        auto it = modelInvalidationSets.find(model_name);
-        if (it != modelInvalidationSets.end())
-          toInvalidate.insert(it->second.begin(), it->second.end());
+        auto it = modelStaleSets.find(model_name);
+        if (it != modelStaleSets.end())
+          staleVertices.insert(it->second.begin(), it->second.end());
       }
-      for (const VertexID& v : toInvalidate)
+      for (const VertexID& v : staleVertices)
       {
         if (masterGraph[v]->isActive()) masterGraph[v]->resetForRecalculation();
       }
