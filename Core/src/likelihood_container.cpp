@@ -119,12 +119,17 @@ namespace Gambit
     // Set up a stream containing the parameter values, for diagnostic output
     std::ostringstream parstream;
 
+    // Names of models for which at least one parameter value actually changed at this point,
+    // used to drive fast-slow selective invalidation of downstream functors.
+    std::set<str> changed_models;
+
     // Iterate over the primary_model_parameters functors of all the models being scanned.
     for (auto act_it = functorMap.begin(), act_end = functorMap.end(); act_it != act_end; act_it++)
     {
       parstream << "  " << act_it->first << ":" << endl;
+      ModelParameters* contents = act_it->second->getcontentsPtr();
       // Get the names of the parameters for this model.
-      auto paramkeys = act_it->second->getcontentsPtr()->getKeys();
+      auto paramkeys = contents->getKeys();
       // Iterate over the parameters, setting their values in the primary_model_parameters functors from the parameterMap.
       for (auto par_it = paramkeys.begin(), par_end = paramkeys.end(); par_it != par_end; par_it++)
       {
@@ -145,9 +150,14 @@ namespace Gambit
            core_error().raise(LOCAL_INFO,err.str());
         }
         parstream << "    " << *par_it << ": " << tmp_it->second << endl;
-        act_it->second->getcontentsPtr()->setValue(*par_it, tmp_it->second);
+        if (contents->getValue(*par_it) != tmp_it->second) changed_models.insert(act_it->first);
+        contents->setValue(*par_it, tmp_it->second);
       }
     }
+
+    // Mark for recalculation only the functors affected by models whose parameters actually
+    // changed at this point (or everything, if fast-slow caching is disabled in the ini file).
+    dependencyResolver.invalidateForChangedModels(changed_models);
 
     // Notify all exceptions of the values of the parameters for this point.
     exception::set_parameters("\n\nYAML-ready parameter values at failed point:\n"+parstream.str());
@@ -391,7 +401,10 @@ namespace Gambit
 
     if (debug) cout << "Total log-likelihood: " << lnlike << endl << endl;
     logger() << "Total lnL: " << lnlike << EOM;
-    dependencyResolver.resetAll();
+    // Recalculation flags for the next point are set by invalidateForChangedModels(), called
+    // from setParameters() once the next point's parameter values are known. Here we only need
+    // to clear this point's print flags, so its (possibly cached) results get printed again.
+    dependencyResolver.resetPrintFlagsAll();
 
     // Disable the printer so that it doesn't try to output the min_valid_lnlike as a valid likelihood value. ScannerBit will re-enable it when needed again.
     // Disable only for the next print call

@@ -156,6 +156,20 @@ namespace Gambit
       virtual void reset();
       /// @}
 
+      /// Reset only the flags that control re-printing of the (possibly cached) result,
+      /// without forcing a recalculation. Safe to call on every functor at every scan point.
+      virtual void resetPrintFlags();
+
+      /// Mark this functor as needing recalculation on all threads, without touching the
+      /// print-related flags. Used by selective (fast-slow-aware) invalidation.
+      virtual void resetForRecalculation();
+
+      /// Set/get whether this functor must be recalculated at every scan point regardless of
+      /// whether its model dependencies have changed (opt-out from fast-slow caching, for
+      /// functors with hidden state such as RNG use that caching cannot see).
+      virtual void setAlwaysRecalculate(bool);
+      virtual bool getAlwaysRecalculate() const;
+
       /// Reset-then-recalculate method
       virtual void reset_and_calculate();
 
@@ -509,6 +523,20 @@ namespace Gambit
       /// Reset functor
       void reset();
 
+      /// Reset only the flags that control re-printing of the (possibly cached) result, without
+      /// forcing a recalculation. Safe to call on every functor at every scan point.
+      void resetPrintFlags();
+
+      /// Mark this functor as needing recalculation on all threads, without touching the
+      /// print-related flags. Used by selective (fast-slow-aware) invalidation.
+      void resetForRecalculation();
+
+      /// Set/get whether this functor must be recalculated at every scan point regardless of
+      /// whether its model dependencies have changed (opt-out from fast-slow caching, for
+      /// functors with hidden state such as RNG use that caching cannot see).
+      void setAlwaysRecalculate(bool);
+      bool getAlwaysRecalculate() const;
+
       /// Tell the functor that it invalidated the current point in model space, pass a message explaining why, and throw an exception.
       void notifyOfInvalidation(const str&);
 
@@ -725,6 +753,10 @@ namespace Gambit
 
       /// Has timing data already been sent to the printer?
       bool* already_printed_timing;
+
+      /// Flag indicating whether this function must always be recalculated, even when
+      /// fast-slow-aware selective invalidation would otherwise skip it as unchanged.
+      bool iAlwaysRecalculate;
 
       /// Flag indicating whether this function can manage a loop over other functions
       bool iCanManageLoops;
