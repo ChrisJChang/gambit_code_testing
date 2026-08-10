@@ -7,8 +7,11 @@
 ///  actually reuses cached results for slow-only capabilities.
 ///
 ///  Classifies each scanned model as "slow" or "fast" by comparing its
-///  ModelSpeeds: entry against the "slow_speed_threshold" option (models
-///  with no assigned speed are treated as slow). For each of "point_number"
+///  entry in this plugin's own "ModelSpeeds" option (a plain map of model
+///  name to speed, set directly under this scanner's own yaml block --
+///  Core has no notion of model speeds at all) against the
+///  "slow_speed_threshold" option (models with no assigned speed are
+///  treated as slow). For each of "point_number"
 ///  outer points, the slow models' parameters are drawn once uniformly at
 ///  random; the point is then re-evaluated "fast_repeats" times, with only
 ///  the fast models' parameters redrawn each repeat. Comparing printer
