@@ -298,6 +298,18 @@ namespace Gambit
       /// Getter for listing model-specific conditional backend requirements (matches on the exact model)
       virtual std::set<sspair> model_conditional_backend_reqs_exact (str model);
 
+      /// Whether this functor has declared (via ALLOW_MODEL_PARAMETERS) that it only depends on a
+      /// subset of the given model's parameters, for per-parameter fast-slow cache invalidation.
+      /// Matches also on parents and friends of the given model.
+      virtual bool hasDeclaredModelParameters(str model);
+
+      /// Getter for the declared parameter subset for a model (matches also on parents and friends).
+      /// Only meaningful if hasDeclaredModelParameters() is true for the same model.
+      virtual std::set<str> getDeclaredModelParameters(str model);
+
+      /// Setter for the declared parameter subset for a model, parsed from a comma-separated string.
+      virtual void setDeclaredModelParameters(str model, str comma_separated_params);
+
       /// Resolve a dependency using a pointer to another functor object
       virtual void resolveDependency (functor*);
 
@@ -494,8 +506,10 @@ namespace Gambit
       /// Work out whether a given combination of models and a model group have any elements in common
       inline bool has_common_elements(std::set<str> combo, str group);
 
-      /// Try to find a parent or friend model in some user-supplied map from models to sspair vectors
-      str find_friend_or_parent_model_in_map(str model, std::map< str, std::set<sspair> > karta);
+      /// Try to find a parent or friend model in some user-supplied map from models to arbitrary values
+      /// (e.g. sspair sets for conditional dependencies, or str sets for declared model parameters).
+      template<typename ValueType>
+      str find_friend_or_parent_model_in_map(str model, std::map<str, ValueType> karta);
 
       /// Reset functor for one thread only
       virtual void reset(int);
@@ -632,6 +646,16 @@ namespace Gambit
 
       /// Getter for listing model-specific conditional backend requirements (matches on the exact model)
       virtual std::set<sspair> model_conditional_backend_reqs_exact (str model);
+
+      /// Whether this functor has declared (via ALLOW_MODEL_PARAMETERS) that it only depends on a
+      /// subset of the given model's parameters (matches also on parents and friends).
+      bool hasDeclaredModelParameters(str model);
+
+      /// Getter for the declared parameter subset for a model (matches also on parents and friends).
+      std::set<str> getDeclaredModelParameters(str model);
+
+      /// Setter for the declared parameter subset for a model, parsed from a comma-separated string.
+      void setDeclaredModelParameters(str model, str comma_separated_params);
 
       /// Add and activate unconditional dependencies.
       void setDependency(str, str, void(*)(functor*, module_functor_common*), str purpose= "", bool critical=false);
@@ -815,6 +839,11 @@ namespace Gambit
 
       /// Map from known models to flags indicating if they are activated or not (known = allowed, in allowed groups or conditions for conditional dependencies)
       std::map<str, bool> activeModelFlags;
+
+      /// Map from models (declared via ALLOW_MODEL_PARAMETERS) to the subset of that model's
+      /// parameters this functor actually depends on. A model with no entry here is assumed
+      /// (conservatively) to have all of its parameters depended upon.
+      std::map<str, std::set<str>> myDeclaredModelParams;
 
       /// Map from (dependency-type pairs) to (pointers to templated void functions
       /// that set dependency functor pointers)

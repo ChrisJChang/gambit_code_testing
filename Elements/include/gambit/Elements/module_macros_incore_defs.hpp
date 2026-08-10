@@ -544,6 +544,25 @@
     BOOST_PP_IIF(IS_MODEL, }, )                                                \
  }                                                                             \
 
+/// Redirection of ALLOW_MODEL_PARAMETERS when invoked from within the core.
+#define CORE_ALLOW_MODEL_PARAMETERS(MODULE,FUNCTION,MODEL,PARAMSTRING)        \
+                                                                               \
+  IF_TOKEN_UNDEFINED(MODULE,FAIL("You must define MODULE before calling "      \
+   "ALLOW_MODEL_PARAMETERS."))                                                 \
+  IF_TOKEN_UNDEFINED(FUNCTION,FAIL("You must define FUNCTION before calling "  \
+   "ALLOW_MODEL_PARAMETERS. Please check the rollcall header for "             \
+   STRINGIFY(MODULE) "."))                                                     \
+                                                                               \
+  namespace Gambit                                                            \
+  {                                                                           \
+    namespace MODULE                                                         \
+    {                                                                        \
+      const int CAT_3(MODEL,_parameters_declared_for_,FUNCTION) =            \
+       register_model_parameter_subset(Functown::FUNCTION, STRINGIFY(MODEL), \
+       PARAMSTRING);                                                         \
+    }                                                                        \
+  }                                                                           \
+
 /// Redirection of ALLOW_MODEL_DEPENDENCE when invoked from within the core.
 #define CORE_ALLOW_MODEL_DEPENDENCE(MODULE,FUNCTION,MODEL,IS_MODEL)            \
                                                                                \
