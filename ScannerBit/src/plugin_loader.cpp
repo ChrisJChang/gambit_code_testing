@@ -858,7 +858,7 @@ namespace Gambit
                     {
                         std::string plug_type = it->first.as<std::string>();
 
-                        if (it->second.IsMap() && plug_type[plug_type.length()-1] == 's' && plug_type != "priors" && plug_type != "parameters")
+                        if (it->second.IsMap() && plug_type[plug_type.length()-1] == 's' && plug_type != "priors" && plug_type != "parameters" && plug_type != "ModelSpeeds")
                         {
                             for (auto it_p = it->second.begin(), end = it->second.end(); it_p != end; it_p++)
                             {
