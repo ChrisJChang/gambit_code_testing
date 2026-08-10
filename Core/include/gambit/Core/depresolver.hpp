@@ -175,11 +175,11 @@ namespace Gambit
         /// (possibly cached) results still get printed. Safe/cheap to call every point.
         void resetPrintFlagsAll();
 
-        /// Mark for recalculation only those active functors that transitively depend on one
-        /// of the given (changed) models, plus any functor that has opted out of fast-slow
+        /// Mark for recalculation only those active functors sensitive to one of the given
+        /// (changed) (model, parameter) pairs, plus any functor that has opted out of fast-slow
         /// caching. If fast-slow caching is disabled in the ini file, every active functor is
         /// marked for recalculation regardless of the supplied set (matches pre-fast-slow behaviour).
-        void markStaleForChangedModels(const std::set<str>& changed_models);
+        void markStaleForChangedParameters(const std::set<std::pair<str,str>>& changed_params);
 
         /// Check for unused rules and options
         void checkForUnusedRules();
@@ -248,10 +248,16 @@ namespace Gambit
         /// scanned over.
         std::vector<std::pair<VertexID,bool>> closestCandidateForModel(std::vector<std::pair<VertexID,bool>> candidates);
 
-        /// Precompute, for each active primary model functor, the set of vertices (itself
-        /// included) that transitively depend on it. Used by markStaleForChangedModels to
-        /// know which vertices need recalculating when a given model's parameters change.
-        void computeModelStaleSets();
+        /// Precompute, for each (model, parameter) pair, the set of vertices sensitive to it --
+        /// i.e. whose cached result can only change if that specific parameter changes. Built by
+        /// a single forward pass over the topologically-sorted graph: a primary model functor is
+        /// sensitive to all of its own parameters; a vertex fed directly by one (via the implicit
+        /// ALLOW_MODELS dependency) is sensitive to whatever subset it declared with
+        /// ALLOW_MODEL_PARAMETERS (or all of that model's parameters, if it declared no subset);
+        /// any other vertex simply inherits the union of its providers' sensitivity sets. Used by
+        /// markStaleForChangedParameters to know exactly which vertices need recalculating when
+        /// a given parameter changes.
+        void computeParameterStaleSets();
 
         //
         // Private data members
@@ -325,14 +331,18 @@ namespace Gambit
         bool print_unitcube = false;
 
         /// Whether fast-slow selective staleness marking is enabled (ini file: dependency_resolution:
-        /// fast_slow_caching). When false, markStaleForChangedModels behaves like resetAll did
+        /// fast_slow_caching). When false, markStaleForChangedParameters behaves like resetAll did
         /// before fast-slow caching existed, i.e. every active functor is always recalculated;
         /// this is the escape hatch for regression-testing the feature against known-good output.
         bool fast_slow_caching_enabled = false;
 
-        /// Map from model name to the set of vertices (including the model's own primary model
-        /// functor vertex) that must be recalculated when that model's parameters change.
-        std::map<str, std::set<VertexID>> modelStaleSets;
+        /// Per-vertex sensitivity sets computed by computeParameterStaleSets(): for each vertex,
+        /// the set of (model, parameter) pairs whose change could affect its cached result.
+        std::map<VertexID, std::set<std::pair<str,str>>> vertexSensitivity;
+
+        /// Inverted index built from vertexSensitivity: for each (model, parameter) pair, the set
+        /// of vertices sensitive to it.
+        std::map<std::pair<str,str>, std::set<VertexID>> paramStaleSets;
 
   };
   }

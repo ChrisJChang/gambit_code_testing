@@ -119,9 +119,9 @@ namespace Gambit
     // Set up a stream containing the parameter values, for diagnostic output
     std::ostringstream parstream;
 
-    // Names of models for which at least one parameter value actually changed at this point,
-    // used to mark downstream functors stale so they get recalculated.
-    std::set<str> changed_models;
+    // (model, parameter) pairs whose value actually changed at this point, used to mark
+    // downstream functors stale so they get recalculated.
+    std::set<std::pair<str,str>> changed_params;
 
     // Iterate over the primary_model_parameters functors of all the models being scanned.
     for (auto act_it = functorMap.begin(), act_end = functorMap.end(); act_it != act_end; act_it++)
@@ -150,14 +150,14 @@ namespace Gambit
            core_error().raise(LOCAL_INFO,err.str());
         }
         parstream << "    " << *par_it << ": " << tmp_it->second << endl;
-        if (contents->getValue(*par_it) != tmp_it->second) changed_models.insert(act_it->first);
+        if (contents->getValue(*par_it) != tmp_it->second) changed_params.insert({act_it->first, *par_it});
         contents->setValue(*par_it, tmp_it->second);
       }
     }
 
-    // Mark for recalculation only the functors affected by models whose parameters actually
-    // changed at this point (or everything, if fast-slow caching is disabled in the ini file).
-    dependencyResolver.markStaleForChangedModels(changed_models);
+    // Mark for recalculation only the functors sensitive to parameters that actually changed
+    // at this point (or everything, if fast-slow caching is disabled in the ini file).
+    dependencyResolver.markStaleForChangedParameters(changed_params);
 
     // Notify all exceptions of the values of the parameters for this point.
     exception::set_parameters("\n\nYAML-ready parameter values at failed point:\n"+parstream.str());
@@ -401,7 +401,7 @@ namespace Gambit
 
     if (debug) cout << "Total log-likelihood: " << lnlike << endl << endl;
     logger() << "Total lnL: " << lnlike << EOM;
-    // Recalculation flags for the next point are set by markStaleForChangedModels(), called
+    // Recalculation flags for the next point are set by markStaleForChangedParameters(), called
     // from setParameters() once the next point's parameter values are known. Here we only need
     // to clear this point's print flags, so its (possibly cached) results get printed again.
     dependencyResolver.resetPrintFlagsAll();
