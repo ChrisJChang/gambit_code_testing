@@ -38,6 +38,9 @@
 
 #include "gambit/ColliderBit/ColliderBit_eventloop.hpp"
 #include "gambit/ColliderBit/analyses/Analysis.hpp"
+#ifndef EXCLUDE_HEPMC
+  #include "gambit/ColliderBit/DebugEventDump.hpp"
+#endif
 
 // #define COLLIDERBIT_DEBUG
 #define DEBUG_PREFIX "DEBUG: OMP thread " << omp_get_thread_num() << ":  "
@@ -143,7 +146,23 @@ namespace Gambit
        *Loop::iteration, Loop::wrapup);                                       \
     }
 
-    RUN_ANALYSES(runATLASAnalyses, ATLAS, ATLASSmearedEvent)
+    #ifndef EXCLUDE_HEPMC
+      // DEBUG ONLY: stashes the full HepMC event for the current OMP thread before
+      // running the ATLAS analyses, so that Analysis_ATLAS_13TeV_0LEP_139invfb can
+      // look it up and dump matching events to file. Remove once debugging is done,
+      // reverting to the plain RUN_ANALYSES(runATLASAnalyses, ATLAS, ATLASSmearedEvent)
+      // below (and the matching DEPENDENCY in ColliderBit_MC_rollcall.hpp).
+      void runATLASAnalyses(AnalysisDataPointers& result)
+      {
+        using namespace Pipes::runATLASAnalyses;
+        DebugEventDump::set_current_event(*Dep::HardScatteringEvent);
+        runAnalyses(result, "ATLAS", *Dep::RunMC,
+         *Dep::ATLASAnalysisContainer, *Dep::ATLASSmearedEvent,
+         *Loop::iteration, Loop::wrapup);
+      }
+    #else
+      RUN_ANALYSES(runATLASAnalyses, ATLAS, ATLASSmearedEvent)
+    #endif
     RUN_ANALYSES(runCMSAnalyses, CMS, CMSSmearedEvent)
     RUN_ANALYSES(runIdentityAnalyses, Identity, CopiedEvent)
 
