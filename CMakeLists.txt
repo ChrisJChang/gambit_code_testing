@@ -219,6 +219,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERS
     set(PERMIT_CXX17_PLUS_CHECK FALSE)
 endif()
 
+
 # GAMBIT requires at least C++17. Use the newest standard the compiler supports, up to C++23.
 include(CheckCXXCompilerFlag)
 if(PERMIT_CXX17_PLUS_CHECK)
@@ -248,6 +249,7 @@ else()
                           "-DWITH_PYBIND11=OFF.${ColourReset}")
     endif()
   endif()
+endif()
 endif()
 
 # Check for C99, C11 and C18 support
@@ -661,7 +663,8 @@ endforeach()
 
 # Make the collider_harvest step a dependency of ColliderBit
 if(";${GAMBIT_BITS};" MATCHES ";ColliderBit;")
-  add_dependencies(ColliderBit collider_harvest)
+  # ColliderBit depends on METSignificance
+  add_dependencies(ColliderBit METSignificance)
 endif()
 
 # If SpecBit is in use, make flexiblesusy a dependency of SpecBit
