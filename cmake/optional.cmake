@@ -215,9 +215,17 @@ endif()
 # standard will not be matched and will trigger the "unable to detect" error below, prompting
 # the user to rebuild ROOT with at least C++17.
 function(check_root_std_flag)
-  # Loop over C++ standards, newest first. "2b"/"2a"/"1z" are the pre-standardisation aliases
-  # that some compilers historically used for C++23/C++20/C++17 respectively, and are included
-  # here purely so that older ROOT builds using those flag spellings are still detected.
+  # Modern ROOT (CMake config) versions expose the standard they were built
+  # with directly via ROOT_CXX_STANDARD, rather than embedding a -std=c++NN
+  # flag in ROOT_CXX_FLAGS. Prefer that when present.
+  if (NOT ROOT_USES_STD AND DEFINED ROOT_CXX_STANDARD AND NOT "${ROOT_CXX_STANDARD}" STREQUAL "")
+    set(ROOT_USES_STD TRUE)
+    set(ROOT_STD "${ROOT_CXX_STANDARD}")
+    set(ROOT_CXX_FLAG "-std=c++${ROOT_CXX_STANDARD}")
+    set(ROOT_CXX_FLAG_RE "-std=c\\+\\+${ROOT_CXX_STANDARD}")
+    message("${BoldYellow}   This ROOT was compiled with ${ROOT_CXX_FLAG} (from ROOT_CXX_STANDARD).${ColourReset}")
+  endif()
+  # Loop over C++ standards
   set(std_list "23;2b;20;2a;17;1z")
   foreach(std ${std_list})
     set(CXX_FLAG "-std=c++${std}")
