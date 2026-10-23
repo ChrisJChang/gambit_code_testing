@@ -229,8 +229,8 @@ namespace Gambit
       std::stringstream summary_line;
       summary_line << "LHC efficiencies per SR: ";
 
-      // Get the loop info for the number of events
-      static map_str_dbl loop_info = *Dep::LHCEventLoopInfo;
+      // Get the loop info for the number of events (not static: the number of events can vary between points)
+      map_str_dbl loop_info = *Dep::LHCEventLoopInfo;
 
       // Loop over analyses and collect the predicted eventes into the map
       for (auto& ana_data : *Dep::AllAnalysisNumbers)
@@ -271,8 +271,8 @@ namespace Gambit
       std::stringstream summary_line;
       summary_line << "LHC efficiencies per analysis: ";
 
-      // Get the loop info for the number of events
-      static map_str_dbl loop_info = *Dep::LHCEventLoopInfo;
+      // Get the loop info for the number of events (not static: the number of events can vary between points)
+      map_str_dbl loop_info = *Dep::LHCEventLoopInfo;
 
       // Loop over analyses and collect the predicted eventes into the map
       for (auto& ana_data : *Dep::AllAnalysisNumbers)

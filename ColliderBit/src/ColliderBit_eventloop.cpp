@@ -36,6 +36,9 @@
 ///          (tomas.gonzalo@kit.edu)
 ///  \date 2023 Aug
 ///
+///  \author Chris Chang
+///  \date 2026 Oct
+///
 ///  *********************************************
 
 #include "gambit/Elements/gambit_module_headers.hpp"
@@ -114,6 +117,8 @@ namespace Gambit
       static std::map<str,int> min_nEvents;
       static std::map<str,int> max_nEvents;
       static std::map<str,int> stoppingres;
+      static std::map<str,int> adaptive_first_check;
+      static std::map<str,double> adaptive_growth;
       static bool fixed_nEvents = true;
       if (first)
       {
@@ -195,6 +200,30 @@ namespace Gambit
           result.maxFailedEvents[collider]                                = colOptions.getValueOrDef<int>(1, "maxFailedEvents");
           result.invalidate_failed_points[collider]                       = colOptions.getValueOrDef<bool>(false, "invalidate_failed_points");
           stoppingres[collider]                                           = colOptions.getValueOrDef<int>(200, "events_between_convergence_checks");
+
+          // Options for likelihood-aware adaptive stopping (frequentist scans only)
+          convergence_settings& conv = result.convergence_options[collider];
+          conv.adaptive_stopping         = colOptions.getValueOrDef<bool>(false, "adaptive_stopping");
+          conv.adaptive_log_only         = colOptions.getValueOrDef<bool>(false, "adaptive_log_only");
+          conv.adaptive_dlnL_threshold   = colOptions.getValueOrDef<double>(conv.adaptive_dlnL_threshold, "adaptive_delta_lnL_threshold");
+          conv.adaptive_n_sigma_MC       = colOptions.getValueOrDef<double>(conv.adaptive_n_sigma_MC, "adaptive_n_sigma_MC");
+          conv.adaptive_insensitive_dlnL = colOptions.getValueOrDef<double>(conv.adaptive_insensitive_dlnL, "adaptive_insensitive_delta_lnL");
+          conv.adaptive_ignore_analyses  = colOptions.getValueOrDef<std::vector<str>>(std::vector<str>(), "adaptive_ignore_analyses");
+          adaptive_first_check[collider] = colOptions.getValueOrDef<int>(250000, "adaptive_first_check");
+          adaptive_growth[collider]      = colOptions.getValueOrDef<double>(2.0, "adaptive_growth");
+
+          if (conv.adaptive_stopping and (not fixed_nEvents or result.estimator == "UMVUE"))
+          {
+            ColliderBit_error().set_fatal(true); // This one must regarded fatal since there is something wrong in the user input
+            ColliderBit_error().raise(LOCAL_INFO,"Option adaptive_stopping requires max_nEvents and cannot be used with the UMVUE estimator for collider "
+                                                 +collider+". Please correct your YAML file.");
+          }
+          if (conv.adaptive_stopping and (adaptive_first_check.at(collider) <= 0 or adaptive_growth.at(collider) <= 1.0))
+          {
+            ColliderBit_error().set_fatal(true); // This one must regarded fatal since there is something wrong in the user input
+            ColliderBit_error().raise(LOCAL_INFO,"Options adaptive_first_check must be > 0 and adaptive_growth > 1 for collider "
+                                                 +collider+". Please correct your YAML file.");
+          }
           result.event_count[collider]                                    = 0;
 
           // In the case of using the UMVUE estimator, override some options
@@ -232,6 +261,11 @@ namespace Gambit
 
         // Initialise the count of the number of generated events.
         result.current_event_count() = 0;
+
+        // Reset the adaptive-stopping record and pass on the cross-section for this point
+        result.adaptive_records[collider] = adaptive_stopping_record();
+        auto xsec_it = Dep::InitialTotalCrossSection->find(collider);
+        result.current_convergence_options().xsec_fb = (xsec_it == Dep::InitialTotalCrossSection->end() ? -1. : xsec_it->second.xsec());
 
         #ifdef COLLIDERBIT_DEBUG
           cout << DEBUG_PREFIX << "operateLHCLoop: Current collider is " << collider << "." << endl;
@@ -294,20 +328,27 @@ namespace Gambit
         const int stoppingres_collider = stoppingres.at(collider);
         const int desired_nEvents_collider = result.desired_nEvents[collider];
 
+        // Adaptive-stopping checkpoints: adaptive_first_check * adaptive_growth^k, below max_nEvents
+        const bool adaptive = result.current_convergence_options().adaptive_stopping;
+        int next_adaptive_check = adaptive_first_check.at(collider);
+        bool adaptive_pending = adaptive and next_adaptive_check < max_nEvents_collider;
+
         // Convergence loop
         while(((fixed_nEvents && result.current_event_count() < max_nEvents_collider) or (!fixed_nEvents && result.current_event_count() < desired_nEvents_collider)) and not *Loop::done)
         {
 
           int eventCountBetweenConvergenceChecks = 0;
+          const int eventsBeforeNextCheck = adaptive_pending ? std::min(stoppingres_collider, next_adaptive_check - result.current_event_count())
+                                                             : stoppingres_collider;
           #ifdef COLLIDERBIT_DEBUG
-            cout << DEBUG_PREFIX << "Starting main event loop.  Will do " << stoppingres_collider << " events before testing convergence." << endl;
+            cout << DEBUG_PREFIX << "Starting main event loop.  Will do " << eventsBeforeNextCheck << " events before testing convergence." << endl;
           #endif
 
           // Main event loop
           result.event_generation_began = true;
           #pragma omp parallel
           {
-            while(eventCountBetweenConvergenceChecks < stoppingres_collider and
+            while(eventCountBetweenConvergenceChecks < eventsBeforeNextCheck and
                   ((fixed_nEvents && result.current_event_count() < max_nEvents_collider) or (!fixed_nEvents && result.current_event_count() < desired_nEvents_collider)) and
                   not *Loop::done and
                   not result.end_of_event_file and
@@ -370,9 +411,16 @@ namespace Gambit
           // Break convergence loop if too many events fail
           if(result.exceeded_maxFailedEvents) break;
 
-          // Don't bother with convergence stuff if we haven't passed the minimum number of events yet.
+          // Don't bother with precision-based convergence if we haven't passed the minimum number of events yet.
           // Only do this if we are using a fixed number of events.
-          if (fixed_nEvents and result.current_event_count() >= min_nEvents_collider)
+          result.precision_check = fixed_nEvents and result.current_event_count() >= min_nEvents_collider;
+          result.adaptive_checkpoint = adaptive_pending and result.current_event_count() >= next_adaptive_check;
+          if (result.adaptive_checkpoint)
+          {
+            next_adaptive_check = std::max(next_adaptive_check + 1, int(std::ceil(next_adaptive_check * adaptive_growth.at(collider))));
+            adaptive_pending = next_adaptive_check < max_nEvents_collider;
+          }
+          if (result.precision_check or result.adaptive_checkpoint)
           {
             #pragma omp parallel
             {
@@ -438,6 +486,20 @@ namespace Gambit
       for (auto& name : Dep::RunMC->collider_names)
       {
         result["event_count_" + name] = Dep::RunMC->event_count.at(name);
+
+        // Adaptive-stopping diagnostics
+        if (Dep::RunMC->convergence_options.at(name).adaptive_stopping)
+        {
+          auto rec_it = Dep::RunMC->adaptive_records.find(name);
+          const adaptive_stopping_record rec = (rec_it == Dep::RunMC->adaptive_records.end() ? adaptive_stopping_record() : rec_it->second);
+          result["adaptive_n_checkpoints_" + name] = rec.n_checkpoints;
+          result["adaptive_stop_reason_" + name] = rec.stop_reason;
+          result["adaptive_events_at_stop_" + name] = rec.n_events_at_stop;
+          result["adaptive_dlnL_upper_at_stop_" + name] = rec.at_stop.dlnL_upper;
+          result["adaptive_dlnL_abs_at_stop_" + name] = rec.at_stop.dlnL_abs;
+          result["adaptive_dlnL_upper_latest_" + name] = rec.latest.dlnL_upper;
+          result["adaptive_dlnL_abs_latest_" + name] = rec.latest.dlnL_abs;
+        }
       }
     }
 

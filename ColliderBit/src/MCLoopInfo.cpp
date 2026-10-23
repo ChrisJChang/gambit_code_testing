@@ -12,6 +12,9 @@
 ///          (p.scott@imperial.ac.uk)
 ///  \date 2019 Jan
 ///
+///  \author Chris Chang
+///  \date 2026 Oct
+///
 ///  *********************************************
 
 
@@ -131,6 +134,10 @@ namespace Gambit
 
     const bool& MCLoopInfo::current_invalidate_failed_points() const { return _current_invalidate_failed_points_it->second; }
     bool& MCLoopInfo::current_invalidate_failed_points() { return _current_invalidate_failed_points_it->second; }
+
+    int MCLoopInfo::current_n_detectors() const { return _current_detector_analyses_it->second.size(); }
+
+    adaptive_stopping_record& MCLoopInfo::current_adaptive_record() const { return adaptive_records.at(_current_collider); }
 
     const int& MCLoopInfo::current_event_count() const { return _current_event_count_it->second; }
     int& MCLoopInfo::current_event_count() { return _current_event_count_it->second; }

@@ -17,9 +17,13 @@
 ///          (anders.kvellestad@fys.uio.no)
 ///  \date 2018 May
 ///
+///  \author Chris Chang
+///  \date 2026 Oct
+///
 ///  *********************************************
 
 #include <omp.h>
+#include <algorithm>
 #include "gambit/ColliderBit/MC_convergence.hpp"
 #include "gambit/ColliderBit/analyses/AnalysisContainer.hpp"
 #include "gambit/ColliderBit/analyses/Analysis.hpp"
@@ -34,6 +38,9 @@ namespace Gambit
 
     /// A map containing pointers to all instances of this class
     std::map<const MC_convergence_checker* const, bool> MC_convergence_checker::convergence_map;
+
+    /// A map containing the latest adaptive-stopping bounds from all instances of this class
+    std::map<const MC_convergence_checker* const, std::pair<int,AdaptiveStopping::Bounds>> MC_convergence_checker::adaptive_map;
 
     /// Constructor
     MC_convergence_checker::MC_convergence_checker() : n_threads(omp_get_max_threads()), converged(false)
@@ -68,6 +75,7 @@ namespace Gambit
       if (omp_get_thread_num() > 0) utils_error().raise(LOCAL_INFO, "Cannot call this function from inside an OpenMP block.");
       converged = false;
       convergence_map[this] = false;
+      adaptive_map.erase(this);
       for (int i = 0; i != n_threads; ++i)
       {
         n_signals[i].clear();
@@ -122,16 +130,11 @@ namespace Gambit
             SR_index += 1;
 
             // Sum signal count across threads
-            int total_counts = 0;
-            for (int j = 0; j != n_threads; j++)
-            {
-              // Tally up the counts across all threads
-              total_counts += n_signals[j][SR_index];
-            }
+            const int SR_counts = total_counts(SR_index);
 
-            double fractional_stat_uncert = (total_counts == 0 ? 1.0 : 1.0/sqrt(total_counts));
-            double absolute_stat_uncert = total_counts * fractional_stat_uncert;
-            SR_converged = (_settings->stop_at_sys and total_counts > 0 and absolute_stat_uncert <= sr.n_sig_MC_sys) or
+            double fractional_stat_uncert = (SR_counts == 0 ? 1.0 : 1.0/sqrt(SR_counts));
+            double absolute_stat_uncert = SR_counts * fractional_stat_uncert;
+            SR_converged = (_settings->stop_at_sys and SR_counts > 0 and absolute_stat_uncert <= sr.n_sig_MC_sys) or
                    (fractional_stat_uncert <= _settings->target_stat);
 
             if (not SR_converged) all_SR_converged = false;
@@ -219,6 +222,81 @@ namespace Gambit
         return true;
       }
       return true;
+    }
+
+
+    /// Total signal MC count in a given SR, summed over threads
+    int MC_convergence_checker::total_counts(int SR_index) const
+    {
+      int total = 0;
+      for (int j = 0; j != n_threads; j++) total += n_signals[j][SR_index];
+      return total;
+    }
+
+
+    /// Evaluate the likelihood-aware adaptive stopping criterion at an event-loop checkpoint
+    bool MC_convergence_checker::adaptive_stop(const AnalysisContainer& ac, int n_events, int n_containers, adaptive_stopping_record& record)
+    {
+      // Without a valid cross-section the MC counts cannot be turned into expected events
+      if (n_events <= 0 or _settings->xsec_fb < 0) return false;
+
+      // Bounds for the analyses in this container, summed as in LHC_Combined_LogLike
+      AdaptiveStopping::Bounds container_bounds;
+      const std::vector<str>& ignored = _settings->adaptive_ignore_analyses;
+      int SR_index = -1;
+      for (auto& analysis_pointer_pair : ac.get_current_analyses_map())
+      {
+        Analysis* analysis = analysis_pointer_pair.second;
+        const bool ignore = std::find(ignored.begin(), ignored.end(), analysis_pointer_pair.first) != ignored.end();
+        const double scale = _settings->xsec_fb * analysis->luminosity() / n_events;
+
+        std::vector<AdaptiveStopping::SRCounts> srs;
+        for (auto& sr : analysis->get_results())
+        {
+          SR_index += 1;
+          if (ignore) continue;
+          srs.push_back({sr.n_obs, sr.n_bkg, sr.n_bkg_err, double(total_counts(SR_index)), sr.n_sig_MC_sys, scale});
+        }
+        if (ignore) continue;
+
+        const AdaptiveStopping::Bounds analysis_bounds = AdaptiveStopping::analysis_bounds(srs, _settings->adaptive_n_sigma_MC);
+        container_bounds.dlnL_upper += analysis_bounds.dlnL_upper;
+        container_bounds.dlnL_abs += analysis_bounds.dlnL_abs;
+
+        #ifdef COLLIDERBIT_DEBUG
+          cerr << "DEBUG: adaptive stopping: " << analysis_pointer_pair.first << " after " << n_events << " events: "
+               << "dlnL_upper = " << analysis_bounds.dlnL_upper << ", dlnL_abs = " << analysis_bounds.dlnL_abs << endl;
+        #endif
+      }
+      adaptive_map[this] = {n_events, container_bounds};
+
+      // Wait until every analysis container has reported for this checkpoint
+      AdaptiveStopping::Bounds total;
+      int n_reported = 0;
+      for (auto& it : adaptive_map)
+      {
+        if (it.second.first != n_events) continue;
+        total.dlnL_upper += it.second.second.dlnL_upper;
+        total.dlnL_abs += it.second.second.dlnL_abs;
+        n_reported++;
+      }
+      if (n_reported < n_containers) return false;
+
+      record.n_checkpoints++;
+      record.latest = total;
+
+      int reason = ADAPTIVE_NO_STOP;
+      if (total.dlnL_upper < -_settings->adaptive_dlnL_threshold) reason = ADAPTIVE_EXCLUDED;
+      else if (total.dlnL_abs < _settings->adaptive_insensitive_dlnL) reason = ADAPTIVE_INSENSITIVE;
+      if (reason == ADAPTIVE_NO_STOP) return false;
+
+      if (record.n_events_at_stop < 0)
+      {
+        record.n_events_at_stop = n_events;
+        record.stop_reason = reason;
+        record.at_stop = total;
+      }
+      return not _settings->adaptive_log_only;
     }
 
   }

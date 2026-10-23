@@ -86,7 +86,17 @@ namespace Gambit
       if (iteration == CHECK_CONVERGENCE)
       {
         // Call quits on the event loop if every analysis in every analysis container has sufficient statistics
-        if (convergence.achieved(Container)) wrapup();
+        if (RunMC.precision_check and convergence.achieved(Container))
+        {
+          wrapup();
+          return;
+        }
+        // Call quits on the event loop if the point is decisively excluded or insensitive
+        if (RunMC.adaptive_checkpoint and
+            convergence.adaptive_stop(Container, RunMC.current_event_count(), RunMC.current_n_detectors(), RunMC.current_adaptive_record()))
+        {
+          wrapup();
+        }
         return;
       }
 

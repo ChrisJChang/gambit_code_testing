@@ -12,6 +12,9 @@
 ///          (p.scott@imperial.ac.uk)
 ///  \date 2019 Jan
 ///
+///  \author Chris Chang
+///  \date 2026 Oct
+///
 ///  *********************************************
 
 
@@ -77,6 +80,15 @@ namespace Gambit
       /// Analysis list for each detector of each collider
       std::map<str,std::map<str,std::vector<str>>> detector_analyses;
 
+      /// The current CHECK_CONVERGENCE iteration should test the precision-based convergence criterion
+      bool precision_check = false;
+
+      /// The current CHECK_CONVERGENCE iteration is an adaptive-stopping checkpoint
+      bool adaptive_checkpoint = false;
+
+      /// Adaptive-stopping decisions for the current parameter point, for each collider
+      mutable std::map<str,adaptive_stopping_record> adaptive_records;
+
       /// Set the current collider
       void set_current_collider(str&);
 
@@ -115,6 +127,12 @@ namespace Gambit
 
       /// Query whether any analyses exist for a given detector for the current collider
       bool current_analyses_exist_for(const str&) const;
+
+      /// Get the number of detectors (i.e. analysis containers) with analyses for the current collider
+      int current_n_detectors() const;
+
+      /// Get/set the adaptive-stopping record for the current collider
+      adaptive_stopping_record& current_adaptive_record() const;
 
       /// Set exceeded_maxFailedEvents = true and decrement event counter by 1
       void report_exceeded_maxFailedEvents() const;
