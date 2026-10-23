@@ -247,7 +247,9 @@ namespace Gambit
       for (auto& analysis_pointer_pair : ac.get_current_analyses_map())
       {
         Analysis* analysis = analysis_pointer_pair.second;
-        const bool ignore = std::find(ignored.begin(), ignored.end(), analysis_pointer_pair.first) != ignored.end();
+        // The special "Baselines" analysis is never part of the loglike (cf. calc_LHC_LogLikes_common)
+        const bool ignore = analysis_pointer_pair.first == "Baselines" or
+                            std::find(ignored.begin(), ignored.end(), analysis_pointer_pair.first) != ignored.end();
         const double scale = _settings->xsec_fb * analysis->luminosity() / n_events;
 
         std::vector<AdaptiveStopping::SRCounts> srs;
