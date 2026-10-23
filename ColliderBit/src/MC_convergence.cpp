@@ -87,7 +87,8 @@ namespace Gambit
     void MC_convergence_checker::update(const AnalysisContainer& ac)
     {
       // Abort if the analysis container tracked by this object is already fully converged
-      if (converged) return;
+      // (unless adaptive stopping still needs up-to-date counts)
+      if (converged and not _settings->adaptive_stopping) return;
 
       // Work out the thread number.
       int my_thread = omp_get_thread_num();
