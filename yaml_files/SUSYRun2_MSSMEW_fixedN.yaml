@@ -81,7 +81,7 @@ Printer:
 
 Scanner:
 
-  use_scanner: de
+  use_scanner: random #de
 
   scanners:
 
@@ -114,22 +114,10 @@ ObsLikes:
           - ATLAS_13TeV_4b_discoverySR_139invfb
           - ATLAS_13TeV_4b_allyears_139invfb
           - ATLAS_13TeV_2OSLEP_chargino_binned_139invfb
-          - ATLAS_13TeV_3b_NN_139invfb
+          #- ATLAS_13TeV_3b_NN_139invfb
           - CMS_13TeV_2OSLEP_Strong_Production_137invfb
           - CMS_13TeV_2OSLEP_Slepton_137invfb
-          - CMS_13TeV_0LEP_chargino_VV_VH_137invfb_OLD
           - CMS_13TeV_2LEPsoft_137invfb
-
-    # Combined likelihood for LHC measurements
-    # NOTE: The LHC_measurements_LogLike should be run as a separate post-processing run.
-    #       since it will be very slow to run on the millions of Pythia events generated
-    #       for the computation of LHC_Combined_LogLike above.
-    # - purpose:    LogLike
-    #   capability: LHC_measurements_LogLike
-
-    # LEP likelihoods
-    # - purpose:    LogLike
-    #   capability: L3_Gravitino_LLike
 
     - purpose:    LogLike
       capability: L3_Chargino_Leptonic_LLike
@@ -171,11 +159,6 @@ ObsLikes:
     
     - purpose:    Observable
       capability: LHCEventLoopInfo
-
-    # NOTE: See comment above regarding LHC_measurements_LogLike.
-    #       The same applies for this observable.
-    # - purpose:    Observable
-    #   capability: LHC_measurements_LogLike_perPool
 
     - purpose:    Observable
       capability: SLHA1_violation
@@ -396,19 +379,18 @@ Rules:
           - ATLAS_13TeV_4b_discoverySR_139invfb
           - ATLAS_13TeV_4b_allyears_139invfb
           - ATLAS_13TeV_2OSLEP_chargino_binned_139invfb
-          - ATLAS_13TeV_3b_NN_139invfb
+          #- ATLAS_13TeV_3b_NN_139invfb
           - CMS_13TeV_2OSLEP_Strong_Production_137invfb
           - CMS_13TeV_2OSLEP_Slepton_137invfb
-          - CMS_13TeV_0LEP_chargino_VV_VH_137invfb_OLD
           - CMS_13TeV_2LEPsoft_137invfb
         analyses:
-          - Baselines
+          #- Baselines
           # 
           - ATLAS_13TeV_0LEPStop_139invfb        # [in skip_analyses] New! (Martin)  
           - ATLAS_13TeV_1Lep2b_139invfb          # New! (Chris)
-          - ATLAS_13TeV_2LEP0JET_EW_139invfb     # New! (Roberto) - Requires ROOT + BDT stuff.
+          #- ATLAS_13TeV_2LEP0JET_EW_139invfb     # New! (Roberto) - Requires ROOT + BDT stuff.
           - ATLAS_13TeV_2LEPJETS_EW_139invfb     # New! (Martin, Chris) 
-          - ATLAS_13TeV_2LEPJETS_RJR_139invfb    # New! (Martin) This search requires ROOT + RestFrames.
+          #- ATLAS_13TeV_2LEPJETS_RJR_139invfb    # New! (Martin) This search requires ROOT + RestFrames.
           - ATLAS_13TeV_3LEP_eRJR_139invfb       # New! (Martin)
           - ATLAS_13TeV_2OR3LEP_139invfb         # New! (Ida) -- Only WH SRs are used.
           - ATLAS_13TeV_bTaus_StopStau_139invfb  # New! (Holly)
@@ -416,8 +398,8 @@ Rules:
           - ATLAS_13TeV_4b_139invfb              # New! (Are)
           - ATLAS_13TeV_4b_discoverySR_139invfb  # [in skip_analyses]
           - ATLAS_13TeV_4b_allyears_139invfb     # [in skip_analyses]
-          - ATLAS_13TeV_2LEPsoft_139invfb        # New! (Tomas)
-          - ATLAS_13TeV_3b_NN_139invfb           # [in skip_analyses, due to probable overlap with ATLAS_13TeV_4b_139invfb] New! (Tomek)
+          # - ATLAS_13TeV_2LEPsoft_139invfb        # New! (Tomas)
+          # - ATLAS_13TeV_3b_NN_139invfb           # [in skip_analyses, due to probable overlap with ATLAS_13TeV_4b_139invfb] New! (Tomek)
           - ATLAS_13TeV_0LEP_139invfb
           - ATLAS_13TeV_2BoostedBosons_139invfb  # Uses antikt_R1.
           - ATLAS_13TeV_2LEPStop_inclusive_139invfb
@@ -437,7 +419,6 @@ Rules:
           - CMS_13TeV_2LEPsoft_137invfb                 # New! (Tomas) [in skip_analyses]
           - CMS_13TeV_0LEPStop_137invfb                 # New! (Holly)
           - CMS_13TeV_0LEP_chargino_VV_VH_137invfb      # New! (Adil) - Uses antikt_R08.
-          - CMS_13TeV_0LEP_chargino_VV_VH_137invfb_OLD  # [in skip_analyses]
           - CMS_13TeV_Photon_GMSB_137invfb              # New! (Vinay)
           - CMS_13TeV_2OSLEP_EW_Production_137invfb     # New! (Anders)
           - CMS_13TeV_2OSLEP_Strong_Production_137invfb # [in skip_analyses]
@@ -531,86 +512,6 @@ Rules:
       cap_loglike: false
       cap_loglike_individual_analyses: false
 
-  # Set analyses for Rivet measurements
-  - capability: Rivet_measurements
-    options:
-      drop_YODA_file: false
-      LHC_13TeV:
-        analyses:
-          - ATLAS_2016_I1419652
-          - ATLAS_2016_I1467230
-          - ATLAS_2017_I1514251:LMODE=EMU
-          - ATLAS_2017_I1609448
-          - ATLAS_2017_I1614149
-          - ATLAS_2017_I1625109
-          - ATLAS_2017_I1627873
-          - ATLAS_2017_I1637587
-          - ATLAS_2017_I1645627
-          - ATLAS_2018_I1634970
-          - ATLAS_2018_I1646686
-          - ATLAS_2018_I1656578
-          - ATLAS_2018_I1698006:LVETO=ON
-          - ATLAS_2018_I1705857
-          - ATLAS_2018_I1707015:LMODE=DILEPTON
-          - ATLAS_2018_I1707015:LMODE=SINGLE
-          - ATLAS_2019_I1718132:LMODE=ELEL
-          - ATLAS_2019_I1718132:LMODE=ELMU
-          - ATLAS_2019_I1718132:LMODE=MUMU
-          - ATLAS_2019_I1720442
-          - ATLAS_2019_I1724098
-          - ATLAS_2019_I1734263
-          - ATLAS_2019_I1738841
-          - ATLAS_2019_I1740909
-          - ATLAS_2019_I1750330:TYPE=BOTH
-          - ATLAS_2019_I1759875
-          - ATLAS_2019_I1764342
-          - ATLAS_2019_I1768911
-          - ATLAS_2019_I1772071
-          - ATLAS_2020_I1788444
-          - ATLAS_2020_I1790256
-          - ATLAS_2020_I1801434
-          - ATLAS_2020_I1803608
-          - ATLAS_2020_I1808726
-          - ATLAS_2021_I1849535
-          - ATLAS_2021_I1852328
-          - ATLAS_2021_I1887997
-          - ATLAS_2022_I2023464
-          - ATLAS_2022_I2037744
-          - ATLAS_2022_I2077570
-          - ATLAS_2022_I2077575
-          - ATLAS_2022_I2593322
-          - ATLAS_2022_I2614196
-          - ATLAS_2023_I2628732
-          - ATLAS_2023_I2648096
-          - CMS_2016_I1459051
-          - CMS_2016_I1491950
-          - CMS_2018_I1662081
-          - CMS_2018_I1663958
-          - CMS_2018_I1667854:LMODE=EMU
-          - CMS_2018_I1682495
-          - CMS_2018_I1711625
-          - CMS_2019_I1705068
-          - CMS_2019_I1744604
-          - CMS_2019_I1753680:LMODE=EMU
-          - CMS_2019_I1753720
-          - CMS_2019_I1764472
-          - CMS_2020_I1814328
-          - CMS_2021_I1847230:MODE=QCD13TeV
-          - CMS_2021_I1866118
-          - CMS_2021_I1932460
-          - CMS_2022_I2079374
-          - LHCB_2018_I1662483
-
-
-  - capability: LHC_measurements
-    function: Contur_LHC_measurements_from_stream
-
-  - capability: LHC_measurements_LogLike
-    function: Contur_LHC_measurements_LogLike
-
-  - capability: LHC_measurements_LogLike_perPool
-    function: Contur_LHC_measurements_LogLike_perPool
-
 
   # Dummy likelihood that can be used to guide the scanner.
   # (If used, remember subtract this loglike contribution from the
@@ -679,4 +580,4 @@ KeyValues:
 
   default_output_path: "runs/SUSYRun2_MSSMEW/"
 
-  debug: false
+  debug: true
